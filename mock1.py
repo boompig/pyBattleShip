@@ -114,7 +114,6 @@ class ShipGrid(Canvas):
 		#id = self._tiles[(x, y)]
 		if state is None:
 			state = self._model.get_state(x, y)
-			#print self._model.state_to_str(state)
 		tag_id = self._get_tile_name(x, y)
 		id = self.find_withtag(tag_id)
 		
@@ -244,7 +243,6 @@ class Game(Frame):
 	
 		if depth < 10:
 			for child in parent.winfo_children():
-				#print child
 				self.set_all_bgs(child, color, depth + 1)
 		
 	def _add_ship_panel(self):

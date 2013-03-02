@@ -53,7 +53,7 @@ class GridModel(object):
 				result = Ship.HIT
 			
 		self._state_dict[sq] = result
-		print "[GRID] {} -> {}".format(sq, Ship.SHOT_RESULTS[self._state_dict[sq]])
+		#print "[GRID] {} -> {}".format(sq, Ship.SHOT_RESULTS[self._state_dict[sq]])
 		return result
 		
 	def get_state(self, x, y):
@@ -62,13 +62,8 @@ class GridModel(object):
 		sq = (x, y)
 		
 		if sq in self._state_dict:
-			if x == y == 4:
-				print Ship.SHOT_RESULTS[self._state_dict[sq]]
 			return self._state_dict[sq]
 		else:
-			if x == y == 4:
-				#print Ship.SHOT_RESULTS[Ship.NULL]
-				pass
 			return Ship.NULL
 		
 	def is_valid_square(self, x, y):
@@ -97,7 +92,6 @@ class GridModel(object):
 				
 			# conflicts with another ship
 			if s.intersects_with(other_ship):
-				print "conflicts with " + str(other_ship)
 				return False
 		
 		# no conflict

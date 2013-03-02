@@ -132,7 +132,6 @@ class ShipModel(object):
 			all_coords = self._ship_pos[ship]
 			
 			s = all_coords.difference(set(self._tile_states.keys()))
-			#print s
 			if len(s) < 2:
 				# mark all the coords in tile_states as sunk
 				for coord in all_coords:
@@ -239,7 +238,7 @@ class Ship(object):
 			return "horizontal"
 		
 	def __str__(self):
-		return "Ship {} @ {} oriented {}ly".format(self._type, (self._x, self._y), self._get_str_v())
+		return "Ship %s @ %s oriented %sly" % (self._type, str((self._x, self._y)), self._get_str_v())
 			
 class ShipLoader(object):
 	'''Load ship object from a file.'''

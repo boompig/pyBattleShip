@@ -42,17 +42,10 @@ class ShipAI(object):
 		
 	def _prelim_mark_stat_model_square(self, x, y):
 		state = self._model.get_state(x, y)
-		
-		if x == y == 4:
-			print Ship.SHOT_RESULTS[state]
-		
-		#print x, y
 				
 		if state == Ship.NULL:
 			self._grid[(x, y)] = 0
-			#print "{} -> {}".format((x, y), Ship.SHOT_RESULTS[state])
 		else:
-			print "{} -> {}".format((x, y), Ship.SHOT_RESULTS[state])
 			# mark as negative
 			# allow for some distinguishing marks between hit and miss
 			self._grid[(x, y)] = state * -1
@@ -65,7 +58,6 @@ class ShipAI(object):
 	def make_stat_model(self):#, x_start=0, x_end=GridModel.SIZE, y_start=0, y_end=GridModel.SIZE):
 		'''(re)compute the statistical model in the given range.'''
 		
-		print Ship.SHOT_RESULTS[self._model.get_state(4, 4)]
 		# initialize all squares
 		self.prelim_mark_stat_model()
 	
@@ -79,14 +71,7 @@ class ShipAI(object):
 						r = self.add_ship_to_stat_model(s)
 				
 	def get_ship_stat_weight(self, s):
-		w = 0
-		
-		d = {
-			Ship.NULL : 1,
-			Ship.MISS : -1,
-			Ship.HIT : 10,
-			Ship.SUNK : -1
-		}
+		w = 1
 	
 		for sq in s.get_covering_squares():
 			state = self._model.get_state(*sq)
@@ -96,9 +81,7 @@ class ShipAI(object):
 			if state in [Ship.SUNK, Ship.MISS]:
 				return 0
 			elif state == Ship.HIT:
-				w += 3
-			elif state == Ship.NULL:
-				w += 1
+				w += 5 # add bonus for every hit
 				
 		return w
 				
@@ -117,11 +100,7 @@ class ShipAI(object):
 					if self._grid[sq] >= 0:
 						self._grid[sq] += w
 				return True
-			else:
-				print str(s) + " has some missed or sunk components"
-		else:
-			if (4, 4) in s.get_covering_squares():
-				print "One of these squares is invalid: " + str(s.get_covering_squares())
+			
 		return False
 		
 	def read_stat_model(self, fname):
@@ -156,7 +135,7 @@ if __name__ == "__main__":
 	grid.add_ship(4, 4, "a", True)
 	grid.finalize()
 	
-	ai = ShipAI()
+	ai = ShipAI(grid)
 	ai.read_stat_model("stat")
 	#ai.show_stat_model()
 	
@@ -164,16 +143,17 @@ if __name__ == "__main__":
 	c = 0
 	ai.show_stat_model()
 	
-	for i in range(1):
+	for i in range(10):
 		shot = ai.get_shot()
-		print shot
+		print "Shot: " + str(shot)
+		#print "Shot: {}".format(shot)
 		result = grid.process_shot(*shot)
-		#print Ship.SHOT_RESULTS[result]
+		print "Result: " + Ship.SHOT_RESULTS[result]
 		ai.set_shot_result(*shot, result=result)
 		
 		if result == Ship.HIT:
 			c += 1
 	
-	ai.show_stat_model()
+		ai.show_stat_model()
 		
 	
