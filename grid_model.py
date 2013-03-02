@@ -1,4 +1,5 @@
 from ship_model import Ship
+from sys import stdout
 
 class GridModel(object):
 	'''Model for one grid.
@@ -15,12 +16,17 @@ class GridModel(object):
 	def __init__(self):
 		'''Create a new grid model.'''
 	
+		self.reset()
+	
+	def reset(self):
 		self._ships = {}
 		self._coords = {}
 		self._finalized = False
 		self._state_dict = {}
 		
 	def finalize(self):
+		assert len(self._ships) == len(Ship.SHIPS)
+		
 		for ship_name, s in self._ships.iteritems():
 			for sq in s.get_covering_squares():
 				self._coords[sq] = ship_name
@@ -38,6 +44,9 @@ class GridModel(object):
 	def process_shot(self, x, y):
 		'''Process shooting the given square.
 		Return result.'''
+		
+		if not self._finalized:
+			self.finalize()
 		
 		result = Ship.MISS
 	
@@ -107,19 +116,10 @@ class GridModel(object):
 		
 		return all([self.is_valid_square(x, y) for x, y in s.get_covering_squares()]) and self._can_add_ship(s)
 	
-	def remove_ship(self, x, y):
-		'''Remove the ship at (x, y). This must be the root.
-		Return True iff a ship was deleted.
-		Performs quite poorly in WC.'''
-		
-		remove_name = None
-		
-		for ship_name, s in self._ships.iteritems():
-			if (x, y) in s.get_covering_set():
-				remove_name = ship_name
-				break
+	def remove_ship(self, remove_name):
+		'''Remove the ship with given name'''
 				
-		if remove_name is None:
+		if remove_name not in self._ships:
 			return False
 		else:
 			del(self._ships[remove_name])
@@ -142,17 +142,49 @@ class GridModel(object):
 		
 		return len(self._ships) == 5
 		
-	def rotate_ship(self, x, y):
+	def rotate_ship(self, ship_name):
 		'''Rotate the existing ship located at (x, y).
 		If no such ship exists, do nothing.'''
 		
-		for ship_name, s in self._ships:
-			if (x, y) == (s._x, s._y):
-				self._rotate_ship(ship_name)
-			
-	def _rotate_ship(self, name):
-		'''Helper function.'''
+		if ship_name in self._ships:
+			s = self._ships[ship_name]
+			result = self.add_ship(s._x, s._y, s._type, not s._vertical)
+			return result
+		else:
+			return False
+		
+	def read(self, fname):
+		'''Load configuration from file.'''
+		
+		f = open(fname)
+		for line in f:
+			if len(line.strip()) == 0 or line.strip().count(" ") != 3:
+				continue
+			ship, x, y, v = line.split()
+			r = self.add_ship(int(x), int(y), ship, v == "v")
+			assert r # always have to load valid cofiguration
+		f.close()
+		
+	def show(self):
+		self._write(stdout)
+		
+	def _write(self, f):
+		for ship in self._ships.itervalues():
+			line = "%s %d %d %s" % (ship.get_name(), ship._x, ship._y, ship._get_str_v()[0])
+			f.write(line + "\n")
+		
+	def write(self, fname):
+		'''Write configuration to file.'''
+		
+		f = open(fname, "w")
+		self._write(f)
+		f.close()
+		
+if __name__ == "__main__":
+	g = GridModel()
+	g.read("enemy_ships")
+	g.show()
+	g.finalize()
 	
-		s = self._ships[name]
-		result = self.add_ship(s._x, s._y, s._type, not s._vertical)
-		return result
+	print g.process_shot(0, 0)
+	assert g.process_shot(0, 0) == Ship.HIT

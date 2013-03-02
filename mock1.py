@@ -1,6 +1,8 @@
 from Tkinter import *
-from ship_model import ShipModel, ShipLoader, Ship
+from ship_model import Ship, ShipLoader
 import time
+from grid_model import GridModel
+from ship_ai import ShipAI
 
 class ShipGrid(Canvas):
 	'''Fun little grid for battleship.'''
@@ -24,8 +26,7 @@ class ShipGrid(Canvas):
 		self.config(height=self.size, width=self.size)
 		
 		self._home = home
-		
-		self._model = ShipModel()
+		self._model = GridModel()#Ship()
 		
 		self._make_grid()
 		self.reset()
@@ -40,7 +41,7 @@ class ShipGrid(Canvas):
 		x, y = self.get_tile_coords(id)
 		
 		tag_id = self._get_tile_name(x, y)
-		result = self._model.shoot(x, y)
+		result = self._model.process_shot(x, y)
 		self._set_tile_state(x, y)
 		
 		#if result and callback is not None:
@@ -53,6 +54,10 @@ class ShipGrid(Canvas):
 		
 		# reset the model
 		self._model.reset()
+		if not self._home:
+			self._model.read("enemy_ships")
+			self._model.finalize()
+			#self._model.show()
 		
 		# unbind all previous event
 		self.unbind("<Button>")
@@ -72,76 +77,62 @@ class ShipGrid(Canvas):
 				continue
 			
 			if len( set(other_sq).intersection(squares) ) > 0:
-				print "fails on " + other
+				#print "fails on " + other
 				return False
 	
 		return self._model.is_valid_ship_placement(x, y, ship, vertical)
 		
 	def add_ship(self, x, y, ship, vertical, callback=None):
 		'''Add a ship at (x, y). Vertical is the orientation - True of False.'''
-	
-		if self.can_add_ship(x, y, ship, vertical):
-			print "+ (%d %d) %s %d" % (x, y, ship, vertical)
 		
-			# erase previous only if this one is valid
-			if ship in self._ships:
-				for p_x, p_y in self._ships[ship]:
-					self._set_tile_state(p_x, p_y, state=self._model.NULL)
-		
-			points = self._model.get_ship_covering_squares(x, y, ship, vertical)
-			self._ships[ship] = points
-			self._orientations[ship] = vertical
-			for p_x, p_y in points:
-				self._set_tile_state(p_x, p_y, state=self._model.SUNK)
-				
-			# only initiate callback on success
+		result = self._model.can_add_ship(x, y, ship, vertical)
+		if result:
+			if ship in self._model._ships:
+				prev_ship = self._model._ships[ship]
+				for sq in prev_ship.get_covering_squares():
+					self._set_tile_state(*sq) # reset state
+			self._model.add_ship(x, y, ship, vertical)
+			for sq in Ship(x, y, ship, vertical).get_covering_squares():
+				self._set_tile_state(*sq, state=Ship.SUNK)
+			
 			if callback is not None:
 				callback()
-			return True
-		else:
-			return False
+		return result
 				
 	def rotate_ship(self, ship):
-		if ship in self._ships:
-			x, y = self._ships[ship][0]
-			return self.add_ship(x, y, ship, not self._orientations[ship])
-		else:
-			return False
+		if ship in self._model._ships:
+			prev_ship = self._model._ships[ship]
+			result = self._model.rotate_ship(ship)
+			if result:
+				for sq in prev_ship.get_covering_squares():
+					self._set_tile_state(*sq) # reset state
+				for sq in self._model._ships[ship].get_covering_squares():
+					self._set_tile_state(*sq, state=Ship.SUNK)
+				return True
+		return False
 		
 	def _set_tile_state(self, x, y, state=None):
 		'''Set the tile state at (x, y).'''
 	
-		#id = self._tiles[(x, y)]
 		if state is None:
 			state = self._model.get_state(x, y)
 		tag_id = self._get_tile_name(x, y)
 		id = self.find_withtag(tag_id)
 		
 		# set the label state
-		#if state == self._model.SUNK:
+		#if state == Ship.SUNK:
 		#	self.itemconfigure(id, text=self._model.get_ship(x, y))
 		#else:
 			#self.itemconfigure(id, text="")
 			
 		# set the color
 		fill_colors = {
-			self._model.NULL : self.RECT_NULL_FILL,
-			self._model.MISS : self.RECT_MISS_FILL,
-			self._model.HIT : self.RECT_HIT_FILL,
-			self._model.SUNK : self.RECT_SUNK_FILL
+			Ship.NULL : self.RECT_NULL_FILL,
+			Ship.MISS : self.RECT_MISS_FILL,
+			Ship.HIT : self.RECT_HIT_FILL,
+			Ship.SUNK : self.RECT_SUNK_FILL
 		}
 		self.itemconfigure(id, fill=fill_colors[state])
-			
-		# initially delete events associated with tile
-		
-			
-		#if not self._home:
-			#self.tag_unbind(tag_id, "<Button>")
-		
-			# set event
-			#if state == self._model.NULL:
-			#	f = lambda event: self.process_shot(x, y)
-			#	self.tag_bind(tag_id, "<Button-1>", f)
 
 	def _get_tile_name(self, x, y):
 		x_id = chr(97 + x) # here we assume GRID_SIZE <= 26
@@ -190,29 +181,7 @@ class ShipGrid(Canvas):
 		'''Return all coordinates.'''
 	
 		return self._tiles.values()
-				
-class GameModel(object):
-	'''Model for the game, to get some kind of logic separation going.'''
-	
-	PLACE_STATE = 1
-	PLAY_STATE = 2
-	
-	def __init__(self, grid_obj):
-		# first, need to keep track of placed ships
-		
-		self._state = PLACE_STATE
-	
-		# stop passing objects!!!
-		self._obj = grid_obj
-		
-	
-		
-	def reset(self):
-		self._unplaced_ships = set(self._obj.SIZES.keys())
-	
-	
-		pass
-				
+
 class Game(Frame):
 	'''Top-level Frame managing top-level events. Interact directly with user.'''
 
@@ -224,9 +193,8 @@ class Game(Frame):
 	def __init__(self, master):
 		Frame.__init__(self, master)
 		
-		#self.config(background="white")
-		
 		self._add_grids()
+		self.ai = ShipAI(self._my_grid._model)
 		self._add_ship_panel()
 		self._make_buttons()
 		self.config(width=self.X_PADDING * 3 + self._my_grid.size * 2 + self.SHIP_PANEL_WIDTH)
@@ -254,7 +222,7 @@ class Game(Frame):
 		self._ship_var = IntVar()
 		self._ship_buttons = {}
 		
-		for i, ship in enumerate(ShipModel.SHIPS):
+		for i, ship in enumerate(Ship.SHIPS):
 			self._ship_buttons[ship[0]] = Radiobutton(self._ship_panel, text=ship.title(), value=i, variable=self._ship_var)
 			self._ship_buttons[ship[0]].pack(anchor=W)
 		
@@ -266,6 +234,7 @@ class Game(Frame):
 				
 			self._play_game_button.config(state=DISABLED)
 		else:
+			self._my_grid._model.finalize()
 			self._their_grid_label.pack()
 			self._their_grid.pack(side=LEFT, pady=20)
 			
@@ -273,12 +242,22 @@ class Game(Frame):
 		id = self._their_grid.find_withtag(CURRENT)[0]
 		# here we can safely process the shot
 		result = self._their_grid.process_shot(id)
-		if result == ShipModel.HIT or result == ShipModel.SUNK:
+		if result == Ship.HIT or result == Ship.SUNK:
 			self._their_grid.tag_unbind(CURRENT, "<Button-1>")
 			print "Go again"
 		else:
 			print "not your turn"
-			time.sleep(2)
+			# disable opponent's grid during their turn
+			result = Ship.NULL
+			while result != Ship.MISS:
+				self._their_grid.config(state=DISABLED)
+				shot = self.ai.get_shot()
+				tag_id = self._my_grid._get_tile_name(*shot)
+				id = self._my_grid.find_withtag(tag_id)[0]
+				result = self._my_grid.process_shot(id)
+				self.ai.set_shot_result(result)
+			#time.sleep(10)
+			self._their_grid.config(state=NORMAL)
 			print "now you can go"
 			
 	def _add_grid_events(self):
@@ -311,8 +290,10 @@ class Game(Frame):
 		self._my_grid.reset()
 		self._their_grid.reset()
 		self._state = 0
-		self._vertical = { ship : True for ship in ShipModel.SIZES.keys()}
-		self._set_ships = {ship : False for ship in ShipModel.SIZES.keys()}
+		self.ai.reset()
+		self.ai.read_stat_model("stat")
+		self._vertical = { ship : True for ship in Ship.SIZES.keys()}
+		self._set_ships = {ship : False for ship in Ship.SIZES.keys()}
 		
 		for x, y in self._my_grid.get_tiles():
 			self.reset_closure(x, y)
@@ -334,7 +315,7 @@ class Game(Frame):
 			self._play_game_button.config(state=NORMAL)
 		
 	def all_ships_set(self):
-		return all([self.ship_set(ship) for ship in ShipModel.SIZES.keys()])
+		return all([self.ship_set(ship) for ship in Ship.SIZES.keys()])
 		
 	def rotate_ship(self):
 		'''Rotate current ship.'''
@@ -345,7 +326,7 @@ class Game(Frame):
 	def get_current_ship(self):
 		'''Return the current ship.'''
 	
-		return ShipModel.SHIPS[self._ship_var.get()][0].lower()
+		return Ship.SHIPS[self._ship_var.get()][0].lower()
 		
 	def get_current_vertical(self):
 		'''Return current vertical orientation.'''

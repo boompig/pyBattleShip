@@ -8,9 +8,12 @@ class ShipAI(object):
 	def __init__(self, grid_model=None):
 		if grid_model is None:
 			grid_model = GridModel()
-			
-		self._model = grid_model
 		
+		self._model = grid_model
+		self.reset()
+			
+	def reset(self):
+		self._prev_shot = None
 		self._grid = {}
 		self._unsunk_ships = Ship.SIZES.keys()
 		
@@ -24,13 +27,14 @@ class ShipAI(object):
 					best_shot = (x, y)
 					max_val = self._grid[best_shot]
 					
+		self._prev_shot = best_shot
 		return best_shot
 		
-	def set_shot_result(self, x, y, result):
-		if result == Ship.SUNK:
+	def set_shot_result(self, result):
+		if result == Ship.SUNK and self._prev_shot is not None:
 			# have to re-check whole initial bit of stat model
 			# necessary to set sunk ship squares properly
-			s = self._model.get_sunk_ship(x, y)
+			s = self._model.get_sunk_ship(*self._prev_shot)
 			self._unsunk_ships.remove(s.get_name())
 			margin = s.get_size()
 		else:
