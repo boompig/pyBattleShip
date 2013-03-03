@@ -5,6 +5,7 @@ class Ship(object):
 	MISS = 1
 	HIT = 2
 	SUNK = 3
+	OTHER = -1
 	
 	SIZES = {
 		"a" : 5,

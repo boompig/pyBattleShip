@@ -16,6 +16,7 @@ class ShipGrid(Canvas):
 	RECT_MISS_FILL = "grey"
 	RECT_HIT_FILL = "red"
 	RECT_SUNK_FILL = "powder blue"
+	RECT_PLACED_FILL = "forest green"
 
 	def __init__(self, master, home=False):
 		'''Create a new grid. home determines if this is your grid or the opponent's.'''
@@ -42,7 +43,13 @@ class ShipGrid(Canvas):
 		
 		tag_id = self._get_tile_name(x, y)
 		result = self._model.process_shot(x, y)
-		self._set_tile_state(x, y)
+		
+		if result == Ship.SUNK:
+			s = self._model.get_sunk_ship(x, y)
+			for sq in s.get_covering_squares():
+				self._set_tile_state(*sq)
+		else:
+			self._set_tile_state(x, y)
 		
 		#if result and callback is not None:
 		#callback(result)
@@ -68,19 +75,6 @@ class ShipGrid(Canvas):
 		# reset the squares
 		for x, y in self._tiles.itervalues():
 			self._set_tile_state(x, y)
-			
-	def can_add_ship(self, x, y, ship, vertical):
-		squares = set(self._model.get_ship_covering_squares(x, y, ship, vertical))
-		
-		for other, other_sq in self._ships.iteritems():
-			if ship == other:
-				continue
-			
-			if len( set(other_sq).intersection(squares) ) > 0:
-				#print "fails on " + other
-				return False
-	
-		return self._model.is_valid_ship_placement(x, y, ship, vertical)
 		
 	def add_ship(self, x, y, ship, vertical, callback=None):
 		'''Add a ship at (x, y). Vertical is the orientation - True of False.'''
@@ -93,7 +87,7 @@ class ShipGrid(Canvas):
 					self._set_tile_state(*sq) # reset state
 			self._model.add_ship(x, y, ship, vertical)
 			for sq in Ship(x, y, ship, vertical).get_covering_squares():
-				self._set_tile_state(*sq, state=Ship.SUNK)
+				self._set_tile_state(*sq, state=Ship.OTHER)
 			
 			if callback is not None:
 				callback()
@@ -107,7 +101,7 @@ class ShipGrid(Canvas):
 				for sq in prev_ship.get_covering_squares():
 					self._set_tile_state(*sq) # reset state
 				for sq in self._model._ships[ship].get_covering_squares():
-					self._set_tile_state(*sq, state=Ship.SUNK)
+					self._set_tile_state(*sq, state=Ship.OTHER)
 				return True
 		return False
 		
@@ -130,7 +124,8 @@ class ShipGrid(Canvas):
 			Ship.NULL : self.RECT_NULL_FILL,
 			Ship.MISS : self.RECT_MISS_FILL,
 			Ship.HIT : self.RECT_HIT_FILL,
-			Ship.SUNK : self.RECT_SUNK_FILL
+			Ship.SUNK : self.RECT_SUNK_FILL,
+			Ship.OTHER : self.RECT_PLACED_FILL
 		}
 		self.itemconfigure(id, fill=fill_colors[state])
 
@@ -231,8 +226,6 @@ class Game(Frame):
 			# hide opponent's grid during setup
 			for child in self._their_grid_frame.winfo_children():
 				child.pack_forget()
-				
-			self._play_game_button.config(state=DISABLED)
 		else:
 			self._my_grid._model.finalize()
 			self._their_grid_label.pack()
@@ -297,6 +290,8 @@ class Game(Frame):
 		
 		for x, y in self._my_grid.get_tiles():
 			self.reset_closure(x, y)
+			
+		self._play_game_button.config(state=DISABLED)
 			
 	def reset_closure(self, x, y):
 		tag_id = self._my_grid._get_tile_name(x, y)
@@ -366,6 +361,7 @@ class Game(Frame):
 		
 if __name__ == "__main__":
 	app = Tk()
+	app.title("Battleship")
 	
 	frame = Game(app)
 	frame.pack()
