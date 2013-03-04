@@ -223,6 +223,7 @@ class Game(Frame):
 		
 	def process_state(self):
 		if self._state == 0:
+			self._play_game_button.config(state=DISABLED)
 			# hide opponent's grid during setup
 			for child in self._their_grid_frame.winfo_children():
 				child.pack_forget()
@@ -261,6 +262,8 @@ class Game(Frame):
 		self._their_grid.tag_bind("tile", "<Button-1>", self._shot)
 			
 	def _add_grids(self):
+		'''Create UI containers for the player grids.'''
+	
 		self._my_grid_frame = Frame(self)
 		self._my_grid_frame.place(x=self.X_PADDING + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING)
 		l1 = Label(self._my_grid_frame, text="Your Grid")
@@ -280,10 +283,16 @@ class Game(Frame):
 	def reset(self):
 		'''New game!'''
 		
+		# reset both grids
 		self._my_grid.reset()
 		self._their_grid.reset()
-		self._state = 0
+		
+		# reset AI
 		self.ai.reset()
+		
+		self._state = 0
+		self.process_state()
+		
 		self.ai.read_stat_model("stat")
 		self._vertical = { ship : True for ship in Ship.SIZES.keys()}
 		self._set_ships = {ship : False for ship in Ship.SIZES.keys()}
@@ -291,15 +300,17 @@ class Game(Frame):
 		for x, y in self._my_grid.get_tiles():
 			self.reset_closure(x, y)
 			
-		self._play_game_button.config(state=DISABLED)
-			
 	def reset_closure(self, x, y):
+		'''Add a placement event to the given tile.'''
+	
 		tag_id = self._my_grid._get_tile_name(x, y)
 		c = self.get_add_ship_callback()
 		f = lambda event: self._my_grid.add_ship(x, y, self.get_current_ship(), self.get_current_vertical(), callback=c)
 		self._my_grid.tag_bind(tag_id, "<Button-1>", f)
 		
 	def get_add_ship_callback(self):
+		'''Return the callback function for adding a ship.'''
+	
 		return lambda: self.ship_set(self.get_current_ship())
 		
 	def ship_set(self, ship):
@@ -310,6 +321,9 @@ class Game(Frame):
 			self._play_game_button.config(state=NORMAL)
 		
 	def all_ships_set(self):
+		'''Return True iff all the ships have been set on the grid.
+		Used as a check to start playing.'''
+	
 		return all([self.ship_set(ship) for ship in Ship.SIZES.keys()])
 		
 	def rotate_ship(self):
