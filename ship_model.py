@@ -45,13 +45,12 @@ class Ship(object):
 		self._y = y
 		self._type = type
 		self._vertical = vertical
+		self._full_name = None
 		
 		if self._type is not None:
 			assert self._type in self.SIZES.keys()
-		
-		self._size = Ship.SIZES[self._type]
-		
-		if self._type is not None:
+			self._size = Ship.SIZES[self._type]
+			
 			for name in self.SHIPS:
 				if name.lower()[0] == self._type:
 					self._full_name = name
@@ -95,6 +94,11 @@ class Ship(object):
 		
 	def mark(self, x, y):
 		self._hit.add((x, y))
+		
+	def rotate(self):
+		'''Change the orientation of this ship.'''
+		
+		self._vertical = not self._vertical
 			
 	def intersects_with(self, other):
 		'''Return True iff this ship intersects with another ship.'''

@@ -107,18 +107,6 @@ class ShipGrid(Canvas):
 			if callback is not None:
 				callback()
 		return result
-				
-	def rotate_ship(self, ship):
-		if ship in self._model._ships:
-			prev_ship = self._model._ships[ship]
-			result = self._model.rotate_ship(ship)
-			if result:
-				for sq in prev_ship.get_covering_squares():
-					self._set_tile_state(*sq) # reset state
-				for sq in self._model._ships[ship].get_covering_squares():
-					self._set_tile_state(*sq, state=Ship.OTHER)
-				return True
-		return False
 		
 	def _set_tile_state(self, x, y, state=None):
 		'''Set the tile state at (x, y).'''
@@ -267,14 +255,19 @@ class Game(Frame):
 		self.unselect_ship()
 			
 	def unselect_ship(self):
+		'''Deselect all ships in the placement and staging GUIs.'''
+	
 		self._ship_var.set(10)
+		self._placement_panel.reset()
 		
 	def _stage_current_ship(self):
 		'''Stage the currently selected ship.'''
 		
-		# the x and y coordinates don't matter in this case
-		s = Ship(0, 0, self.get_current_ship(), self.get_current_vertical())
-		self._placement_panel.add_ship(s)
+		if self.get_current_ship() is not None:
+			# the x and y coordinates don't matter in this case
+			# stage the ship vertically by default
+			s = Ship(0, 0, self.get_current_ship(), True)
+			self._placement_panel.add_ship(s)
 		
 	def _hide_frame(self, frame):
 		'''Since you can't hide a frame per se, 'unpack' the frame's child widgets.
@@ -386,7 +379,6 @@ class Game(Frame):
 		self.process_state()
 		
 		self.ai.read_stat_model("stat")
-		self._vertical = { ship : True for ship in Ship.SIZES.keys()}
 		self._set_ships = {ship : False for ship in Ship.SIZES.keys()}
 		
 		for x, y in self._my_grid.get_tiles():
@@ -398,8 +390,17 @@ class Game(Frame):
 	
 		tag_id = self._my_grid._get_tile_name(x, y)
 		c = self.get_add_ship_callback()
-		f = lambda event: self._my_grid.add_ship(x, y, self.get_current_ship(), self.get_current_vertical(), callback=c)
+		f = lambda event: self.add_staged_ship(x, y, c)
 		self._my_grid.tag_bind(tag_id, "<Button-1>", f)
+		
+	def add_staged_ship(self, x, y, callback):
+		'''Take the stage from the staging area, and place it on the board at position (x, y).
+		After ship has been placed, execute the function <callback>.'''
+	
+		s = self._placement_panel.get_staged_ship()
+		
+		if s is not None:
+			self._my_grid.add_ship(x, y, s.get_short_name(), s.is_vertical(), callback)
 		
 	def get_add_ship_callback(self):
 		'''Return the callback function for adding a ship.'''
@@ -423,15 +424,6 @@ class Game(Frame):
 		if all(self._set_ships.values()):
 			self._play_game_button.config(state=NORMAL)
 		
-	def rotate_ship(self):
-		'''Rotate current ship in the staging area.'''
-		
-		self._vertical[self.get_current_ship()] = not self.get_current_vertical()
-		self._stage_current_ship()
-		
-		#if self._my_grid.rotate_ship(self.get_current_ship()):
-		#	self._vertical[self.get_current_ship()] = not self.get_current_vertical()
-		
 	def get_current_ship(self):
 		'''Return the current ship.'''
 		
@@ -439,18 +431,6 @@ class Game(Frame):
 			return None
 		else:
 			return Ship.SHIPS[self._ship_var.get()][0].lower()
-		
-	def get_current_vertical(self):
-		'''Return current vertical orientation.'''
-		
-		if self.get_current_ship() is None:
-			return None
-		elif self.get_current_ship() not in self._vertical:
-			# set vertical if not set
-			# true by default
-			self._vertical[self.get_current_ship()] = True
-	
-		return self._vertical[self.get_current_ship()]
 		
 	def play_game(self):
 		'''Process the event to stop placement and start playing the game.
@@ -470,6 +450,7 @@ class Game(Frame):
 		for ship in ships:
 			self._ship_buttons[ship._type].invoke()
 			self._my_grid.add_ship(*ship.coords(), ship=ship._type, vertical=ship._vertical=="v", callback=self.get_add_ship_callback())
+		self.unselect_ship()
 		
 	def _make_buttons(self):
 		'''Create action buttons at the bottom.'''
@@ -480,9 +461,6 @@ class Game(Frame):
 	
 		reset_button = Button(button_frame, text="Reset", command=self.reset)
 		reset_button.pack(side=LEFT, padx=5, pady=5)
-		
-		rotate_button = Button(button_frame, text="Rotate Ship", command=self.rotate_ship)
-		rotate_button.pack(side=LEFT, padx=5, pady=5)
 		
 		self._play_game_button = Button(button_frame, text="Play", command=self.play_game)
 		self._play_game_button.pack(side=LEFT, padx=5, pady=5)
