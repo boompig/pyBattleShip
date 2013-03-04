@@ -289,12 +289,18 @@ class Game(Frame):
 			# show staging panel
 			self._placement_panel.pack_ui()
 			self._placement_panel.lift(aboveThis=self._their_grid_frame)
+			
+			# enable placement
+			self._autoplace_button.config(state=NORMAL)
 		
 			self._play_game_button.config(state=DISABLED)
 			self._hide_frame(self._their_grid_frame)
 		else:
 			self._my_grid._model.finalize()
 			self._hide_frame(self._placement_panel)
+			
+			# disable placement
+			self._autoplace_button.config(state=DISABLED)
 			
 			# disable ship selector radio buttons
 			#for button in self._ship_buttons.itervalues():
@@ -465,8 +471,8 @@ class Game(Frame):
 		self._play_game_button = Button(button_frame, text="Play", command=self.play_game)
 		self._play_game_button.pack(side=LEFT, padx=5, pady=5)
 		
-		autoplace_button = Button(button_frame, text="Auto-place ships", command=self.auto_place)
-		autoplace_button.pack(side=LEFT, padx=5, pady=5)
+		self._autoplace_button = Button(button_frame, text="Auto-place ships", command=self.auto_place)
+		self._autoplace_button.pack(side=LEFT, padx=5, pady=5)
 		
 		
 if __name__ == "__main__":
