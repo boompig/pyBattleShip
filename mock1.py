@@ -18,10 +18,16 @@ from ship_grid import ShipGrid
 class Game(Frame):
 	'''Top-level Frame managing top-level events. Interact directly with user.'''
 
+	############ geometry ###############
 	X_PADDING = 25
 	Y_PADDING = 25
-	
 	SHIP_PANEL_WIDTH = 150
+	#####################################
+	
+	########### states ##################
+	PLACING = 0
+	PLAYING = 1
+	#####################################
 	
 	def __init__(self, master):
 		'''Create the UI for a game of battleship.'''
@@ -120,7 +126,7 @@ class Game(Frame):
 			- 1: playing battleship with opponent
 		'''
 	
-		if self._state == 0:
+		if self._state == self.PLACING:
 			# show staging panel
 			self._placement_panel.pack_ui()
 			self._placement_panel.lift(aboveThis=self._their_grid_frame)
@@ -216,7 +222,7 @@ class Game(Frame):
 		# reset AI
 		self.ai.reset()
 		
-		self._state = 0
+		self._state = self.PLACING
 		self.process_state()
 		
 		self.ai.read_stat_model("stat")
@@ -279,7 +285,7 @@ class Game(Frame):
 		
 		#TODO sanity check
 	
-		self._state = 1
+		self._state = self.PLAYING
 		self.process_state()
 		
 	def auto_place(self):
