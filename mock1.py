@@ -1,8 +1,18 @@
+'''
+Written by Daniel Kats
+March 4, 2013
+'''
+
+#################
+#	IMPORTS		#
+#################
+
 from Tkinter import *
 from ship_model import Ship, ShipLoader
 import time
 from grid_model import GridModel
 from ship_ai import ShipAI
+from ship_placement_panel import ShipPlacementPanel
 
 class ShipGrid(Canvas):
 	'''Fun little grid for battleship.'''
@@ -78,6 +88,11 @@ class ShipGrid(Canvas):
 		
 	def add_ship(self, x, y, ship, vertical, callback=None):
 		'''Add a ship at (x, y). Vertical is the orientation - True of False.'''
+		
+		# sometimes nothing is selected, but grid is pressed.
+		# ignore these events
+		if ship is None:
+			return False
 		
 		result = self._model.can_add_ship(x, y, ship, vertical)
 		if result:
@@ -186,30 +201,50 @@ class Game(Frame):
 	SHIP_PANEL_WIDTH = 150
 	
 	def __init__(self, master):
+		'''Create the UI for a game of battleship.'''
+	
 		Frame.__init__(self, master)
 		
-		self._add_grids()
-		self.ai = ShipAI(self._my_grid._model)
-		self._add_ship_panel()
-		self._make_buttons()
-		self.config(width=self.X_PADDING * 3 + self._my_grid.size * 2 + self.SHIP_PANEL_WIDTH)
-		# here 50 is an estimate for the size of the button
-		self.config(height=self.Y_PADDING * 3 + self._my_grid.size + 50)
+		self._create_ui()
 		
+		# these are 'controller' elements that should really be in another class
+		self.ai = ShipAI(self._my_grid._model)
 		self.reset()
 		self.process_state()
 		
-		self.set_all_bgs(self, "white")
+	def _create_ui(self):
+		'''Create all UI elements for the game.'''
+		
+		self._add_grids()
+		self._add_placement_panel()
+		self._add_ship_panel()
+		self._make_buttons()
+		
+		self.config(width=self.X_PADDING * 3 + self._my_grid.size * 2 + self.SHIP_PANEL_WIDTH)
+		# here 50 is an estimate for the size of the button
+		self.config(height=self.Y_PADDING * 3 + self._my_grid.size + 50)
+		self.set_all_bgs("white", self)
+		
+	def _add_placement_panel(self):
+		'''Create the placement/ship staging panel.'''
+	
+		self._placement_panel = ShipPlacementPanel(self)
+		self._placement_panel.place(
+			x=self.X_PADDING * 2 + self.SHIP_PANEL_WIDTH + self._my_grid.size,
+			y=self.Y_PADDING
+		)
 			
-	def set_all_bgs(self, parent, color, depth=0):
+	def set_all_bgs(self, color, parent):
+		'''Set all the backgrounds of the child widgets to a certain color.'''
+	
 		parent.config(background=color)
 	
-		if depth < 10:
-			for child in parent.winfo_children():
-				self.set_all_bgs(child, color, depth + 1)
+		for child in parent.winfo_children():
+			self.set_all_bgs(color, child)
 		
 	def _add_ship_panel(self):
-		'''Add a list of ships in the same spot as the opponent's grid.'''
+		'''Add a list of ships in the same spot as the opponent's grid.
+		Note that staging area must be added FIRST'''
 		
 		self._ship_panel = Frame(self)
 		self._ship_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 4)
@@ -218,17 +253,63 @@ class Game(Frame):
 		self._ship_buttons = {}
 		
 		for i, ship in enumerate(Ship.SHIPS):
-			self._ship_buttons[ship[0]] = Radiobutton(self._ship_panel, text=ship.title(), value=i, variable=self._ship_var)
-			self._ship_buttons[ship[0]].pack(anchor=W)
+			self._ship_buttons[ship[0]] = Radiobutton(
+				self._ship_panel, 
+				text=ship.title(), 
+				value=i, 
+				variable=self._ship_var, 
+				indicatoron=False,
+				command=self._stage_current_ship
+			)
+			self._ship_buttons[ship[0]].pack(anchor=W, pady=10)
+			self._ship_buttons[ship[0]].grid(sticky=N + S + E + W)
+			
+		self.unselect_ship()
+			
+	def unselect_ship(self):
+		self._ship_var.set(10)
+		
+	def _stage_current_ship(self):
+		'''Stage the currently selected ship.'''
+		
+		# the x and y coordinates don't matter in this case
+		s = Ship(0, 0, self.get_current_ship(), self.get_current_vertical())
+		self._placement_panel.add_ship(s)
+		
+	def _hide_frame(self, frame):
+		'''Since you can't hide a frame per se, 'unpack' the frame's child widgets.
+		WARNING: this removes all packing directions for children'''
+
+		frame.lower()
+		
+		for child in frame.winfo_children():
+			child.pack_forget()
 		
 	def process_state(self):
+		'''Simple state controller to enable and disable certain widgets depending on the state.
+		For now, there are 2 states:
+			- 0: ship placement
+			- 1: playing battleship with opponent
+		'''
+	
 		if self._state == 0:
+			# show staging panel
+			self._placement_panel.pack_ui()
+			self._placement_panel.lift(aboveThis=self._their_grid_frame)
+		
 			self._play_game_button.config(state=DISABLED)
-			# hide opponent's grid during setup
-			for child in self._their_grid_frame.winfo_children():
-				child.pack_forget()
+			self._hide_frame(self._their_grid_frame)
 		else:
 			self._my_grid._model.finalize()
+			self._hide_frame(self._placement_panel)
+			
+			# disable ship selector radio buttons
+			#for button in self._ship_buttons.itervalues():
+			#	button.unbind(state=DISABLED)
+			self.unselect_ship()
+			
+			# show opponent's grid
+			self._their_grid_frame.lift(aboveThis=self._placement_panel)
 			self._their_grid_label.pack()
 			self._their_grid.pack(side=LEFT, pady=20)
 			
@@ -236,6 +317,7 @@ class Game(Frame):
 		id = self._their_grid.find_withtag(CURRENT)[0]
 		# here we can safely process the shot
 		result = self._their_grid.process_shot(id)
+		
 		if result == Ship.HIT or result == Ship.SUNK:
 			self._their_grid.tag_unbind(CURRENT, "<Button-1>")
 			print "Go again"
@@ -249,6 +331,10 @@ class Game(Frame):
 				tag_id = self._my_grid._get_tile_name(*shot)
 				id = self._my_grid.find_withtag(tag_id)[0]
 				result = self._my_grid.process_shot(id)
+				
+				if result == Ship.SUNK:
+					self._set_ship_sunk(self._my_grid._model.get_sunk_ship(*shot).get_short_name())
+				
 				self.ai.set_shot_result(result)
 			#time.sleep(10)
 			self._their_grid.config(state=NORMAL)
@@ -287,6 +373,12 @@ class Game(Frame):
 		self._my_grid.reset()
 		self._their_grid.reset()
 		
+		# reset selected ship
+		self.unselect_ship()
+		
+		# reset staging area
+		self._placement_panel.reset()
+		
 		# reset AI
 		self.ai.reset()
 		
@@ -301,7 +393,8 @@ class Game(Frame):
 			self.reset_closure(x, y)
 			
 	def reset_closure(self, x, y):
-		'''Add a placement event to the given tile.'''
+		'''Add a placement event to the given tile.
+		TODO this is badly named'''
 	
 		tag_id = self._my_grid._get_tile_name(x, y)
 		c = self.get_add_ship_callback()
@@ -313,40 +406,65 @@ class Game(Frame):
 	
 		return lambda: self.ship_set(self.get_current_ship())
 		
+	def _set_ship_sunk(self, ship):
+		'''This is a callback, to be called when a ship has been sunk.
+		TODO for now only called when one of MY ships is sunk.
+		IU shows that the given ship has been sunk.'''
+		
+		self._ship_buttons[ship].config(foreground="red")
+		
 	def ship_set(self, ship):
+		'''This is a callback, to be called when a ship has been placed.
+		UI shows that the given ship has been placed.'''
+	
 		self._set_ships[ship] = True
 		self._ship_buttons[ship].config(foreground="forest green")
 		
 		if all(self._set_ships.values()):
 			self._play_game_button.config(state=NORMAL)
 		
-	def all_ships_set(self):
-		'''Return True iff all the ships have been set on the grid.
-		Used as a check to start playing.'''
-	
-		return all([self.ship_set(ship) for ship in Ship.SIZES.keys()])
-		
 	def rotate_ship(self):
-		'''Rotate current ship.'''
+		'''Rotate current ship in the staging area.'''
 		
-		if self._my_grid.rotate_ship(self.get_current_ship()):
-			self._vertical[self.get_current_ship()] = not self.get_current_vertical()
+		self._vertical[self.get_current_ship()] = not self.get_current_vertical()
+		self._stage_current_ship()
+		
+		#if self._my_grid.rotate_ship(self.get_current_ship()):
+		#	self._vertical[self.get_current_ship()] = not self.get_current_vertical()
 		
 	def get_current_ship(self):
 		'''Return the current ship.'''
-	
-		return Ship.SHIPS[self._ship_var.get()][0].lower()
+		
+		if self._ship_var.get() >= len(Ship.SHIPS):
+			return None
+		else:
+			return Ship.SHIPS[self._ship_var.get()][0].lower()
 		
 	def get_current_vertical(self):
 		'''Return current vertical orientation.'''
+		
+		if self.get_current_ship() is None:
+			return None
+		elif self.get_current_ship() not in self._vertical:
+			# set vertical if not set
+			# true by default
+			self._vertical[self.get_current_ship()] = True
 	
 		return self._vertical[self.get_current_ship()]
 		
 	def play_game(self):
+		'''Process the event to stop placement and start playing the game.
+		'''
+		
+		#TODO sanity check
+	
 		self._state = 1
 		self.process_state()
 		
 	def auto_place(self):
+		'''Automatically place the ships according to a preset configuration.
+		This should only be enabled in debugging mode.'''
+	
 		ships = ShipLoader.read("sample_ship_config.txt")
 		
 		for ship in ships:
@@ -377,9 +495,10 @@ if __name__ == "__main__":
 	app = Tk()
 	app.title("Battleship")
 	
-	frame = Game(app)
-	frame.pack()
-	frame.pack(fill=BOTH, expand=1)
+	game = Game(app)
+	#game.lift(aboveThis=root)
+	#game.pack()
+	game.pack(fill=BOTH, expand=1)
 	
 	app.mainloop()
 	pass

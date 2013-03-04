@@ -1,6 +1,13 @@
 from copy import deepcopy
 			
+'''
+Written by Daniel Kats
+March 4, 2013
+'''
+			
 class Ship(object):
+	'''An object representing a ship in a game of Battleship.'''
+
 	NULL = 0
 	MISS = 1
 	HIT = 2
@@ -31,14 +38,31 @@ class Ship(object):
 	]
 
 	def __init__(self, x=None, y=None, type=None, vertical=None):
+		'''Create a new ship with the given parameters.
+		Throw assertion error if incorrect ship type given.'''
+	
 		self._x = x
 		self._y = y
 		self._type = type
 		self._vertical = vertical
 		
+		if self._type is not None:
+			assert self._type in self.SIZES.keys()
+		
 		self._size = Ship.SIZES[self._type]
 		
+		if self._type is not None:
+			for name in self.SHIPS:
+				if name.lower()[0] == self._type:
+					self._full_name = name
+					break
+		
 		self._hit = set([])
+		
+	def is_vertical(self):
+		'''Return True iff this ship is oriented vertically.'''
+	
+		return self._vertical
 		
 	def coords(self):
 		'''Return coordinates of ship's root
@@ -52,6 +76,8 @@ class Ship(object):
 		return self.coords()
 		
 	def get_size(self):
+		'''Return the size (in number of tiles) of this ship.'''
+	
 		return self._size
 		
 	def get_covering_squares(self):
@@ -78,7 +104,20 @@ class Ship(object):
 		return len(s1.intersection(s2)) > 0
 		
 	def get_name(self):
+		'''Return the name of this ship.
+		This is the short name.'''
+	
 		return self._type
+		
+	def get_short_name(self):
+		'''Return single letter identifier for this ship.'''
+	
+		return self._type
+		
+	def get_full_name(self):
+		'''Return full name for this ship.'''
+		
+		return self._full_name
 		
 	def is_sunk(self):
 		'''Return True iff this ship is sunk.'''
