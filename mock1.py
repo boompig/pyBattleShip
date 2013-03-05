@@ -14,6 +14,7 @@ from grid_model import GridModel
 from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
 from ship_grid import ShipGrid
+from ship_war_panel import ShipWarPanel
 
 class Game(Frame):
 	'''Top-level Frame managing top-level events. Interact directly with user.'''
@@ -46,7 +47,7 @@ class Game(Frame):
 		
 		self._add_grids()
 		self._add_placement_panel()
-		self._add_ship_panel()
+		self._add_ship_panels()
 		self._make_buttons()
 		
 		self.config(width=self.X_PADDING * 3 + self._my_grid.size * 2 + self.SHIP_PANEL_WIDTH)
@@ -71,10 +72,11 @@ class Game(Frame):
 		for child in parent.winfo_children():
 			self.set_all_bgs(color, child)
 		
-	def _add_ship_panel(self):
-		'''Add a list of ships in the same spot as the opponent's grid.
+	def _add_ship_panels(self):
+		'''Add a list of ships to select from, for adding.
 		Note that staging area must be added FIRST'''
 		
+		############################## ShipPanel ########################
 		self._ship_panel = Frame(self)
 		self._ship_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 4)
 		
@@ -94,6 +96,13 @@ class Game(Frame):
 			self._ship_buttons[ship[0]].grid(sticky=N + S + E + W)
 			
 		self.unselect_ship()
+		##################################################################
+		
+		###################### ShipWarPanel ##############################
+		
+		self._ship_war_panel = ShipWarPanel(self)
+		self._ship_war_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 2)
+		##################################################################
 			
 	def unselect_ship(self):
 		'''Deselect all ships in the placement and staging GUIs.'''
@@ -136,6 +145,9 @@ class Game(Frame):
 		
 			self._play_game_button.config(state=DISABLED)
 			self._hide_frame(self._their_grid_frame)
+			
+			self._hide_frame(self._ship_war_panel)
+			self._ship_panel.lift(aboveThis=self._ship_war_panel)
 		else:
 			self._my_grid._model.finalize()
 			self._hide_frame(self._placement_panel)
@@ -148,6 +160,9 @@ class Game(Frame):
 			#	button.unbind(state=DISABLED)
 			self.unselect_ship()
 			
+			self._ship_war_panel.pack_ui()
+			self._ship_war_panel.lift(aboveThis=self._ship_panel)
+			
 			# show opponent's grid
 			self._their_grid_frame.lift(aboveThis=self._placement_panel)
 			self._their_grid_label.pack()
@@ -158,11 +173,10 @@ class Game(Frame):
 		# here we can safely process the shot
 		result = self._their_grid.process_shot(id)
 		
-		if result == Ship.HIT or result == Ship.SUNK:
-			self._their_grid.tag_unbind(CURRENT, "<Button-1>")
-			print "Go again"
-		else:
-			print "not your turn"
+		# disable square regardless of result
+		self._their_grid.tag_unbind(CURRENT, "<Button-1>")
+		
+		if result != Ship.HIT and result != Ship.SUNK:
 			# disable opponent's grid during their turn
 			result = Ship.NULL
 			while result != Ship.MISS:
@@ -172,13 +186,14 @@ class Game(Frame):
 				id = self._my_grid.find_withtag(tag_id)[0]
 				result = self._my_grid.process_shot(id)
 				
+				if result == Ship.HIT or result == Ship.SUNK:
+					self._set_ship_hit(self._my_grid._model.get_ship_at(*shot))
+				
 				if result == Ship.SUNK:
 					self._set_ship_sunk(self._my_grid._model.get_sunk_ship(*shot).get_short_name())
 				
 				self.ai.set_shot_result(result)
-			#time.sleep(10)
 			self._their_grid.config(state=NORMAL)
-			print "now you can go"
 			
 	def _add_grid_events(self):
 		'''Add events to the grids.'''
@@ -257,9 +272,16 @@ class Game(Frame):
 	def _set_ship_sunk(self, ship):
 		'''This is a callback, to be called when a ship has been sunk.
 		TODO for now only called when one of MY ships is sunk.
-		IU shows that the given ship has been sunk.'''
+		UI shows that the given ship has been sunk.'''
 		
 		self._ship_buttons[ship].config(foreground="red")
+		
+	def _set_ship_hit(self, ship):
+		'''This is a callback, to be called when a ship has been hit.
+		TODO for now only called when one of MY ships is hit.
+		UI shows that the given ship has been hit.'''
+		
+		self._ship_war_panel.update(ship)
 		
 	def ship_set(self, ship):
 		'''This is a callback, to be called when a ship has been placed.

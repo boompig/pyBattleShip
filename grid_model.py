@@ -40,6 +40,13 @@ class GridModel(object):
 		s = self._ships[self._coords[(x, y)]]
 		if s.is_sunk():
 			return s
+			
+	def get_ship_at(self, x, y):
+		'''Return the ship at the given coordinates.
+		Try not to abuse this.'''
+		
+		if (x, y) in self._coords:
+			return self._ships[self._coords[(x, y)]]
 		
 	def process_shot(self, x, y):
 		'''Process shooting the given square.
@@ -81,6 +88,8 @@ class GridModel(object):
 		return 0 <= x < self.SIZE and 0 <= y < self.SIZE
 		
 	def is_empty_square(self, x, y):
+		'''Not sure what this is or where used, but wrong.'''
+	
 		return self.get_state == Ship.NULL
 		
 	def _can_add_ship(self, s):
@@ -141,17 +150,6 @@ class GridModel(object):
 		'''Return True iff the grid has all ships placed.'''
 		
 		return len(self._ships) == 5
-		
-	def rotate_ship(self, ship_name):
-		'''Rotate the existing ship located at (x, y).
-		If no such ship exists, do nothing.'''
-		
-		if ship_name in self._ships:
-			s = self._ships[ship_name]
-			result = self.add_ship(s._x, s._y, s._type, not s._vertical)
-			return result
-		else:
-			return False
 		
 	def read(self, fname):
 		'''Load configuration from file.'''

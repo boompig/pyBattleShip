@@ -22,6 +22,22 @@ class Ship(object):
 		"m" : 2
 	}
 	
+	SHORT_NAMES = [
+		"a",
+		"b",
+		"d",
+		"s",
+		"m"
+	]
+	
+	NAMES = {
+		"a" : "aircraft carrier",
+		"b" : "battleship",
+		"d" : "destroyer",
+		"s" : "submarine",
+		"m" : "minesweeper"
+	}
+	
 	SHOT_RESULTS = {
 		NULL : "NULL",
 		MISS : "MISS",
@@ -92,7 +108,14 @@ class Ship(object):
 		
 		return set(self.get_covering_squares())
 		
+	def get_hit_list(self):
+		'''Return the list of hits as a boolean array.'''
+		
+		return [coord in self._hit for coord in self.get_covering_squares()]
+		
 	def mark(self, x, y):
+		'''Mark the given spot as a hit.'''
+	
 		self._hit.add((x, y))
 		
 	def rotate(self):
