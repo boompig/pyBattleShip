@@ -28,6 +28,7 @@ class Game(Frame):
 	########### states ##################
 	PLACING = 0
 	PLAYING = 1
+	GAME_OVER = 2
 	#####################################
 	
 	def __init__(self, master):
@@ -148,9 +149,11 @@ class Game(Frame):
 			
 			self._hide_frame(self._ship_war_panel)
 			self._ship_panel.lift(aboveThis=self._ship_war_panel)
-		else:
+		elif self._state == self.PLAYING:
 			self._my_grid._model.finalize()
 			self._hide_frame(self._placement_panel)
+			
+			self._play_game_button.config(state=DISABLED)
 			
 			# disable placement
 			self._autoplace_button.config(state=DISABLED)
@@ -167,6 +170,10 @@ class Game(Frame):
 			self._their_grid_frame.lift(aboveThis=self._placement_panel)
 			self._their_grid_label.pack()
 			self._their_grid.pack(side=LEFT, pady=20)
+		elif self._state == self.GAME_OVER:
+			# disable everything except for the reset button
+			self._their_grid.config(state=DISABLED)
+			print "GAME OVER"
 			
 	def _shot(self, event):
 		id = self._their_grid.find_withtag(CURRENT)[0]
@@ -176,12 +183,16 @@ class Game(Frame):
 		# disable square regardless of result
 		self._their_grid.tag_unbind(CURRENT, "<Button-1>")
 		
+		if result == Ship.SUNK and self._their_grid._model.all_sunk():
+			self._game_over = True
+		
 		if result != Ship.HIT and result != Ship.SUNK:
 			# disable opponent's grid during their turn
 			result = Ship.NULL
 			while result != Ship.MISS:
 				self._their_grid.config(state=DISABLED)
 				shot = self.ai.get_shot()
+				
 				tag_id = self._my_grid._get_tile_name(*shot)
 				id = self._my_grid.find_withtag(tag_id)[0]
 				result = self._my_grid.process_shot(id)
@@ -192,8 +203,17 @@ class Game(Frame):
 				if result == Ship.SUNK:
 					self._set_ship_sunk(self._my_grid._model.get_sunk_ship(*shot).get_short_name())
 				
+					if self._my_grid._model.all_sunk():
+						self._game_over = True
+						break
+				
 				self.ai.set_shot_result(result)
 			self._their_grid.config(state=NORMAL)
+			
+		
+		if self._game_over:
+			self._state = self.GAME_OVER
+			self.process_state()
 			
 	def _add_grid_events(self):
 		'''Add events to the grids.'''
@@ -224,6 +244,8 @@ class Game(Frame):
 	def reset(self):
 		'''New game!'''
 		
+		self._game_over = False
+		
 		# reset both grids
 		self._my_grid.reset()
 		self._their_grid.reset()
@@ -236,6 +258,11 @@ class Game(Frame):
 		
 		# reset AI
 		self.ai.reset()
+		
+		# reset indicators on ships in panels
+		self._ship_war_panel.reset()
+		for ship, button in self._ship_buttons.iteritems():
+			button.config(foreground="black")
 		
 		self._state = self.PLACING
 		self.process_state()

@@ -72,6 +72,11 @@ class GridModel(object):
 		#print "[GRID] {} -> {}".format(sq, Ship.SHOT_RESULTS[self._state_dict[sq]])
 		return result
 		
+	def all_sunk(self):
+		'''Return True iff all the ships on this grid have been sunk.'''
+		
+		return all([s.is_sunk() for s in self._ships.itervalues()])
+		
 	def get_state(self, x, y):
 		'''Return state of given square.'''
 	

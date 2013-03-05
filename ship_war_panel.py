@@ -38,17 +38,24 @@ class ShipWarPanel(Frame):
 		
 		self.pack_ui()
 		
-	def update(self, ship):
+	def update(self, ship, hit_list=None):
 		'''Update the given ship.'''
 		
-		# make sure that the right number of squares are colored in
-		for i, r in enumerate(ship.get_hit_list()):
+		if hit_list is None:
+			hit_list = ship.get_hit_list()
+		
+		for i, r in enumerate(hit_list):
 			item = self._ship_squares[ship.get_short_name()][i]
 		
 			if r:
 				self._c.itemconfig(item, fill=self.RECT_HIT_FILL)
 			else:
 				self._c.itemconfig(item, fill=self.RECT_NULL_FILL)
+		
+	def reset(self):
+		for ship in Ship.SHORT_NAMES:
+			s = Ship(0, 0, ship, False)
+			self.update(s, [0] * s.get_size())
 		
 	def _create_ships(self):
 		'''Create ships on the canvas.'''
