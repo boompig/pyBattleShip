@@ -50,9 +50,8 @@ class Game(Frame):
 		self._create_ui()
 		
 		# these are 'controller' elements that should really be in another class
-		self.ai = ShipAI(self._my_grid._model)
+		self.ai = ShipAI(self._their_grid._model, self._my_grid._model)
 		self.reset()
-		self.process_state()
 		
 	def _create_ui(self):
 		'''Create all UI elements for the game.'''
@@ -152,12 +151,18 @@ class Game(Frame):
 			
 			self._hide_frame(self._my_grid_frame._ship_war_panel)
 			self._my_grid_frame._ship_panel.lift(aboveThis=self._my_grid_frame._ship_war_panel)
+			
+			# allow the AI to place ships
+			self.ai.place_ships()
 		elif self._state == self.PLAYING:
 			self.config(width=self.X_PADDING * 4 + self._my_grid.size * 2 + self.SHIP_PANEL_WIDTH * 3)
 			self._my_grid._model.finalize()
+			self._their_grid._model.finalize()
 			self._hide_frame(self._my_grid_frame._staging_panel)
 			
 			self._their_grid.config(state=NORMAL)
+			self._their_grid.enable()
+			
 			for ship in Ship.SHORT_NAMES:
 				self._their_grid_frame._ship_panel.set_placed(ship)
 			
@@ -166,9 +171,6 @@ class Game(Frame):
 			# disable placement
 			self._my_grid_frame._autoplace_button.config(state=DISABLED)
 			
-			# disable ship selector radio buttons
-			#for button in self._my_grid_frame._ship_panel._ship_buttons.itervalues():
-			#	button.unbind(state=DISABLED)
 			self.unselect_ship()
 			
 			self._my_grid_frame._ship_war_panel.pack_ui()
@@ -180,9 +182,7 @@ class Game(Frame):
 			self._their_grid.pack(side=LEFT, pady=20)
 		elif self._state == self.GAME_OVER:
 			# disable everything except for the reset button
-			#self._their_grid.config(state=DISABLED)
 			self._their_grid.disable()
-			self._their_grid.tag_unbind("tile", "<Button-1>")
 			print "GAME OVER"
 			print "The %s player won" % self.get_winning_player()
 			
@@ -202,11 +202,8 @@ class Game(Frame):
 		id = self._their_grid.find_withtag(CURRENT)[0]
 		# here we can safely process the shot
 		result = self._their_grid.process_shot(id)
-		
-		# disable square regardless of result
-		#self._their_grid.tag_unbind(CURRENT, "<Button-1>")
-		item = self._their_grid.find_withtag(CURRENT)[0]
-		self._their_grid.itemconfig(item, state=DISABLED)
+		# disable square regardless of result=
+		self._their_grid.itemconfig(id, state=DISABLED)
 		shot = self._their_grid._tiles[id]
 		
 		if result == Ship.SUNK:
@@ -219,10 +216,9 @@ class Game(Frame):
 		if result != Ship.HIT and result != Ship.SUNK:
 			# disable opponent's grid during their turn
 			result = Ship.NULL
+			self._their_grid.disable()
 			while result != Ship.MISS:
-				self._their_grid.disable()
 				shot = self.ai.get_shot()
-				
 				tag_id = self._my_grid._get_tile_name(*shot)
 				id = self._my_grid.find_withtag(tag_id)[0]
 				result = self._my_grid.process_shot(id)
@@ -238,8 +234,9 @@ class Game(Frame):
 						break
 				
 				self.ai.set_shot_result(result)
+				
+			# re-enable their grid
 			self._their_grid.enable()
-			
 		
 		if self._winner is not None:
 			self._state = self.GAME_OVER
@@ -292,14 +289,14 @@ class Game(Frame):
 		for ship, button in self._my_grid_frame._ship_panel._ship_buttons.iteritems():
 			button.config(foreground="black")
 		
-		self._state = self.PLACING
-		self.process_state()
-		
 		self.ai.read_stat_model("stat")
 		self._set_ships = {ship : False for ship in Ship.SIZES.keys()}
 		
 		for x, y in self._my_grid.get_tiles():
 			self.reset_closure(x, y)
+			
+		self._state = self.PLACING
+		self.process_state()
 			
 	def reset_closure(self, x, y):
 		'''Add a placement event to the given tile.

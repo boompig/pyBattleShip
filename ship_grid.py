@@ -86,32 +86,37 @@ class ShipGrid(Canvas):
 		'''Disable all events on this grid.'''
 		
 		for id in self._tiles.iterkeys():
+			self._prev_state[id] = (self.itemcget(id, 'state') == NORMAL)
+			#if not self._prev_state[id]:
+				#print self._tiles[id]
 			self.itemconfig(id, state=DISABLED)
 			
 	def enable(self):
 		'''Re-enable the events on the grid.'''
 		
 		for id in self._tiles.iterkeys():
-			self.itemconfig(id, state=NORMAL)
+			if self._prev_state[id]:
+				self.itemconfig(id, state=NORMAL)
 		
 	def reset(self):
 		'''Reset the grid to starting values.'''
 		
 		# reset the model
 		self._model.reset()
-		if not self._home:
-			self._model.read("enemy_ships")
-			self._model.finalize()
+		#if not self._home:
+		#	self._model.read("enemy_ships")
+		#	self._model.finalize()
 			#self._model.show()
 		
 		# unbind all previous event
 		self.unbind("<Button>")
 		
 		self._ships = {}
-		self._orientations = {}
+		self._prev_state = {} # this is only True for tiles disabled/enabled using disable and enable methods
 		
 		# reset the squares
 		for id, (x, y) in self._tiles.iteritems():
+			self._prev_state[id] = False 
 			self.itemconfig(id, state=NORMAL)
 			self._set_tile_state(x, y)
 		

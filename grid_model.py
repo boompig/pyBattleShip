@@ -119,6 +119,11 @@ class GridModel(object):
 		
 		# no conflict
 		return True
+
+	def can_add(self, s):
+		'''Wether the given ship *object* can be added to the grid.'''
+
+		return all([self.is_valid_square(x, y) for x, y in s.get_covering_squares()]) and self._can_add_ship(s)
 		
 	def can_add_ship(self, x, y, ship, vertical):
 		'''Whether the given ship can be added to the grid.
@@ -127,8 +132,7 @@ class GridModel(object):
 			- when constructing model of opponent, hide secret ships'''
 			
 		s = Ship(x, y, ship, vertical)
-		
-		return all([self.is_valid_square(x, y) for x, y in s.get_covering_squares()]) and self._can_add_ship(s)
+		return self.can_add(s)
 	
 	def remove_ship(self, remove_name):
 		'''Remove the ship with given name'''
@@ -138,18 +142,23 @@ class GridModel(object):
 		else:
 			del(self._ships[remove_name])
 			return True
+
+	def add(self, s):
+		'''Add the given ship *object*.'''
+
+		added = False
+
+		if self.can_add(s):
+			self._ships[s.get_short_name()] = s
+			added = True
+
+		return added
 	
 	def add_ship(self, x, y, ship, vertical):
 		'''Add a new ship, or change orientation of existing ship.'''
 		
-		added = False
-		
-		if self.can_add_ship(x, y, ship, vertical):
-			s = Ship(x, y, ship, vertical)
-			self._ships[ship] = s
-			added = True
-			
-		return added
+		s = Ship(x, y, ship, vertical)
+		return self.add(s)
 		
 	def has_all_ships(self):
 		'''Return True iff the grid has all ships placed.'''
