@@ -187,7 +187,8 @@ class ShipGrid(Canvas):
 		self._orientations = {}
 		
 		# reset the squares
-		for x, y in self._tiles.itervalues():
+		for id, (x, y) in self._tiles.iteritems():
+			self.itemconfig(id, state=NORMAL)
 			self._set_tile_state(x, y)
 		
 	def add_ship(self, x, y, ship, vertical, callback=None):

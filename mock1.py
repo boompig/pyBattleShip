@@ -31,6 +31,11 @@ class Game(Frame):
 	GAME_OVER = 2
 	#####################################
 	
+	############ players ################
+	AI_PLAYER = 0
+	HUMAN_PLAYER = 1
+	#####################################
+	
 	def __init__(self, master):
 		'''Create the UI for a game of battleship.'''
 	
@@ -176,6 +181,15 @@ class Game(Frame):
 			# disable everything except for the reset button
 			self._their_grid.config(state=DISABLED)
 			print "GAME OVER"
+			print "The %s player won" % self.get_winning_player()
+			
+	def get_winning_player(self):
+		'''Return textual representation of winning player.'''
+		
+		return {
+			self.HUMAN_PLAYER: "human",
+			self.AI_PLAYER : "ai"
+		} [self._winner]
 			
 	def _shot(self, event):
 		id = self._their_grid.find_withtag(CURRENT)[0]
@@ -183,10 +197,12 @@ class Game(Frame):
 		result = self._their_grid.process_shot(id)
 		
 		# disable square regardless of result
-		self._their_grid.tag_unbind(CURRENT, "<Button-1>")
+		#self._their_grid.tag_unbind(CURRENT, "<Button-1>")
+		item = self._their_grid.find_withtag(CURRENT)[0]
+		self._their_grid.itemconfig(item, state=DISABLED)
 		
 		if result == Ship.SUNK and self._their_grid._model.all_sunk():
-			self._game_over = True
+			self._winner = self.HUMAN_PLAYER
 		
 		if result != Ship.HIT and result != Ship.SUNK:
 			# disable opponent's grid during their turn
@@ -206,14 +222,14 @@ class Game(Frame):
 					self._set_ship_sunk(self._my_grid._model.get_sunk_ship(*shot).get_short_name())
 				
 					if self._my_grid._model.all_sunk():
-						self._game_over = True
+						self._winner = self.AI_PLAYER
 						break
 				
 				self.ai.set_shot_result(result)
 			self._their_grid.config(state=NORMAL)
 			
 		
-		if self._game_over:
+		if self._winner is not None:
 			self._state = self.GAME_OVER
 			self.process_state()
 			
@@ -246,7 +262,7 @@ class Game(Frame):
 	def reset(self):
 		'''New game!'''
 		
-		self._game_over = False
+		self._winner = None
 		
 		# reset both grids
 		self._my_grid.reset()
