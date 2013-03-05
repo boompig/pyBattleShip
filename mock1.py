@@ -153,6 +153,8 @@ class Game(Frame):
 			self._my_grid._model.finalize()
 			self._hide_frame(self._placement_panel)
 			
+			self._their_grid.config(state=NORMAL)
+			
 			self._play_game_button.config(state=DISABLED)
 			
 			# disable placement
