@@ -41,7 +41,30 @@ class ShipPanel(Frame):
 		
 		Frame.__init__(self, master)
 		self._create_ui()
-		self.reset()
+		#self.reset()
+		
+	def _create_ui(self):
+		'''Create the UI for this panel.'''
+		
+		self._ship_var = IntVar()
+		self._ship_buttons = {}
+		
+		for i, ship in enumerate(Ship.SHORT_NAMES):
+			b = Radiobutton(
+				self, 
+				text=Ship.NAMES[ship].title(), 
+				value=i, 
+				variable=self._ship_var, 
+				indicatoron=False
+			)
+			b.pack(anchor=W, pady=10)
+			b.grid(sticky=N + S + E + W)
+			
+			# and a sort-of experimental feature...
+			b.ship_state = self.UNPLACED
+			
+			# save it
+			self._ship_buttons[ship] = b
 		
 	def reset(self):	
 		'''Return this panel to its starting state.'''
@@ -90,28 +113,6 @@ class ShipPanel(Frame):
 			#f = lambda: function(ship)
 			self._ship_buttons[ship].config(command=function)
 		
-	def _create_ui(self):
-		'''Create the UI for this panel.'''
-		
-		self._ship_var = IntVar()
-		self._ship_buttons = {}
-		
-		for i, ship in enumerate(Ship.SHORT_NAMES):
-			b = Radiobutton(
-				self, 
-				text=Ship.NAMES[ship].title(), 
-				value=i, 
-				variable=self._ship_var, 
-				indicatoron=False
-			)
-			b.pack(anchor=W, pady=10)
-			b.grid(sticky=N + S + E + W)
-			
-			# and a sort-of experimental feature...
-			b.ship_state = self.UNPLACED
-			
-			# save it
-			self._ship_buttons[ship] = b
 		
 	def unselect_ship(self):
 		'''Unselect all ships.'''

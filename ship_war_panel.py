@@ -29,8 +29,8 @@ class ShipWarPanel(Frame):
 	def _create_ui(self):
 		'''Create all UI widgets.'''
 	
-		self._l = Label(self, text="My Ships")
-		self._l.grid(row=0)
+		#self._l = Label(self, text="My Ships")
+		#self._l.grid(row=0)
 		self._c = Canvas(self)
 		self._c.grid(row=1)
 		
@@ -82,6 +82,6 @@ class ShipWarPanel(Frame):
 	def pack_ui(self):
 		'''Remedy for my method of hiding frames.'''
 	
-		self._l.pack()
+		#self._l.pack()
 		self._c.pack()
 	
