@@ -89,14 +89,6 @@ class ShipPanel(Frame):
 		if ship is not None and ship in self._ship_buttons:
 			#f = lambda: function(ship)
 			self._ship_buttons[ship].config(command=function)
-			
-	def _move_ui(self):
-		self._ship_list = Listbox(self)
-	
-		for s in Ship.SHORT_NAMES:
-			self._ship_list.insert(END, Ship.NAMES[s])
-			
-		self._ship_list.pack()
 		
 	def _create_ui(self):
 		'''Create the UI for this panel.'''

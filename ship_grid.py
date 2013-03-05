@@ -78,7 +78,8 @@ class PlayerController(Frame):
 		
 		# remove staging events
 		#self._ship_panel.unbind_all()
-		self._ship_panel._move_ui()
+		#self._ship_panel._move_ui()
+		pass
 		
 	def add_staged_ship(self, x, y):
 		'''Add the ship in the staging area to the grid.
@@ -169,6 +170,18 @@ class ShipGrid(Canvas):
 		#callback(result)
 		
 		return result
+		
+	def disable(self):
+		'''Disable all events on this grid.'''
+		
+		for id in self._tiles.iterkeys():
+			self.itemconfig(id, state=DISABLED)
+			
+	def enable(self):
+		'''Re-enable the events on the grid.'''
+		
+		for id in self._tiles.iterkeys():
+			self.itemconfig(id, state=NORMAL)
 		
 	def reset(self):
 		'''Reset the grid to starting values.'''

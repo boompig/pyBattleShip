@@ -64,8 +64,8 @@ class Game(Frame):
 	def _add_placement_panel(self):
 		'''Create the placement/ship staging panel.'''
 	
-		self._placement_panel = ShipPlacementPanel(self)
-		self._placement_panel.place(
+		self._my_grid_frame._placement_panel = ShipPlacementPanel(self)
+		self._my_grid_frame._placement_panel.place(
 			x=self.X_PADDING * 2 + self.SHIP_PANEL_WIDTH + self._my_grid.size,
 			y=self.Y_PADDING
 		)
@@ -83,15 +83,15 @@ class Game(Frame):
 		Note that staging area must be added FIRST'''
 		
 		############################## ShipPanel ########################
-		self._ship_panel = Frame(self)
-		self._ship_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 4)
+		self._my_grid_frame._ship_panel = Frame(self)
+		self._my_grid_frame._ship_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 4)
 		
 		self._ship_var = IntVar()
 		self._ship_buttons = {}
 		
 		for i, ship in enumerate(Ship.SHIPS):
 			self._ship_buttons[ship[0]] = Radiobutton(
-				self._ship_panel, 
+				self._my_grid_frame._ship_panel, 
 				text=ship.title(), 
 				value=i, 
 				variable=self._ship_var, 
@@ -106,15 +106,15 @@ class Game(Frame):
 		
 		###################### ShipWarPanel ##############################
 		
-		self._ship_war_panel = ShipWarPanel(self)
-		self._ship_war_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 2)
+		self._my_grid_frame._ship_war_panel = ShipWarPanel(self)
+		self._my_grid_frame._ship_war_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 2)
 		##################################################################
 			
 	def unselect_ship(self):
 		'''Deselect all ships in the placement and staging GUIs.'''
 	
 		self._ship_var.set(10)
-		self._placement_panel.reset()
+		self._my_grid_frame._placement_panel.reset()
 		
 	def _stage_current_ship(self):
 		'''Stage the currently selected ship.'''
@@ -123,7 +123,7 @@ class Game(Frame):
 			# the x and y coordinates don't matter in this case
 			# stage the ship vertically by default
 			s = Ship(0, 0, self.get_current_ship(), True)
-			self._placement_panel.add_ship(s)
+			self._my_grid_frame._placement_panel.add_ship(s)
 		
 	def _hide_frame(self, frame):
 		'''Since you can't hide a frame per se, 'unpack' the frame's child widgets.
@@ -143,43 +143,45 @@ class Game(Frame):
 	
 		if self._state == self.PLACING:
 			# show staging panel
-			self._placement_panel.pack_ui()
-			self._placement_panel.lift(aboveThis=self._their_grid_frame)
+			self._my_grid_frame._placement_panel.pack_ui()
+			self._my_grid_frame._placement_panel.lift(aboveThis=self._their_grid_frame)
 			
 			# enable placement
-			self._autoplace_button.config(state=NORMAL)
+			self._my_grid_frame._autoplace_button.config(state=NORMAL)
 		
 			self._play_game_button.config(state=DISABLED)
 			self._hide_frame(self._their_grid_frame)
 			
-			self._hide_frame(self._ship_war_panel)
-			self._ship_panel.lift(aboveThis=self._ship_war_panel)
+			self._hide_frame(self._my_grid_frame._ship_war_panel)
+			self._my_grid_frame._ship_panel.lift(aboveThis=self._my_grid_frame._ship_war_panel)
 		elif self._state == self.PLAYING:
 			self._my_grid._model.finalize()
-			self._hide_frame(self._placement_panel)
+			self._hide_frame(self._my_grid_frame._placement_panel)
 			
 			self._their_grid.config(state=NORMAL)
 			
 			self._play_game_button.config(state=DISABLED)
 			
 			# disable placement
-			self._autoplace_button.config(state=DISABLED)
+			self._my_grid_frame._autoplace_button.config(state=DISABLED)
 			
 			# disable ship selector radio buttons
 			#for button in self._ship_buttons.itervalues():
 			#	button.unbind(state=DISABLED)
 			self.unselect_ship()
 			
-			self._ship_war_panel.pack_ui()
-			self._ship_war_panel.lift(aboveThis=self._ship_panel)
+			self._my_grid_frame._ship_war_panel.pack_ui()
+			self._my_grid_frame._ship_war_panel.lift(aboveThis=self._my_grid_frame._ship_panel)
 			
 			# show opponent's grid
-			self._their_grid_frame.lift(aboveThis=self._placement_panel)
+			self._their_grid_frame.lift(aboveThis=self._my_grid_frame._placement_panel)
 			self._their_grid_label.pack()
 			self._their_grid.pack(side=LEFT, pady=20)
 		elif self._state == self.GAME_OVER:
 			# disable everything except for the reset button
-			self._their_grid.config(state=DISABLED)
+			#self._their_grid.config(state=DISABLED)
+			self._their_grid.disable()
+			self._their_grid.tag_unbind("tile", "<Button-1>")
 			print "GAME OVER"
 			print "The %s player won" % self.get_winning_player()
 			
@@ -192,6 +194,10 @@ class Game(Frame):
 		} [self._winner]
 			
 	def _shot(self, event):
+		'''Process a shooting event.
+		event should be the Tkinter event triggered by tag_bind
+		This is a callback function.'''
+	
 		id = self._their_grid.find_withtag(CURRENT)[0]
 		# here we can safely process the shot
 		result = self._their_grid.process_shot(id)
@@ -208,7 +214,7 @@ class Game(Frame):
 			# disable opponent's grid during their turn
 			result = Ship.NULL
 			while result != Ship.MISS:
-				self._their_grid.config(state=DISABLED)
+				self._their_grid.disable()
 				shot = self.ai.get_shot()
 				
 				tag_id = self._my_grid._get_tile_name(*shot)
@@ -226,7 +232,7 @@ class Game(Frame):
 						break
 				
 				self.ai.set_shot_result(result)
-			self._their_grid.config(state=NORMAL)
+			self._their_grid.enable()
 			
 		
 		if self._winner is not None:
@@ -272,13 +278,13 @@ class Game(Frame):
 		self.unselect_ship()
 		
 		# reset staging area
-		self._placement_panel.reset()
+		self._my_grid_frame._placement_panel.reset()
 		
 		# reset AI
 		self.ai.reset()
 		
 		# reset indicators on ships in panels
-		self._ship_war_panel.reset()
+		self._my_grid_frame._ship_war_panel.reset()
 		for ship, button in self._ship_buttons.iteritems():
 			button.config(foreground="black")
 		
@@ -304,7 +310,7 @@ class Game(Frame):
 		'''Take the stage from the staging area, and place it on the board at position (x, y).
 		After ship has been placed, execute the function <callback>.'''
 	
-		s = self._placement_panel.get_staged_ship()
+		s = self._my_grid_frame._placement_panel.get_staged_ship()
 		
 		if s is not None:
 			self._my_grid.add_ship(x, y, s.get_short_name(), s.is_vertical(), callback)
@@ -326,7 +332,7 @@ class Game(Frame):
 		TODO for now only called when one of MY ships is hit.
 		UI shows that the given ship has been hit.'''
 		
-		self._ship_war_panel.update(ship)
+		self._my_grid_frame._ship_war_panel.update(ship)
 		
 	def ship_set(self, ship):
 		'''This is a callback, to be called when a ship has been placed.
@@ -379,8 +385,8 @@ class Game(Frame):
 		self._play_game_button = Button(button_frame, text="Play", command=self.play_game)
 		self._play_game_button.pack(side=LEFT, padx=5, pady=5)
 		
-		self._autoplace_button = Button(button_frame, text="Auto-place ships", command=self.auto_place)
-		self._autoplace_button.pack(side=LEFT, padx=5, pady=5)
+		self._my_grid_frame._autoplace_button = Button(button_frame, text="Auto-place ships", command=self.auto_place)
+		self._my_grid_frame._autoplace_button.pack(side=LEFT, padx=5, pady=5)
 		
 		
 if __name__ == "__main__":
