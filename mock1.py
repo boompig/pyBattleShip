@@ -183,8 +183,28 @@ class Game(Frame):
 		elif self._state == self.GAME_OVER:
 			# disable everything except for the reset button
 			self._their_grid.disable()
+			self.master.title("Battleship (Game Over)")
+			self.show_game_over_popup()
 			print "GAME OVER"
 			print "The %s player won" % self.get_winning_player()
+			
+	def show_game_over_popup(self):
+		'''Show a popup with a dialog saying the game is over, and showing the winning player.'''
+	
+		popup = Toplevel(self)
+		popup.title("Game Over")
+		f = Frame(popup, width=500)
+		#f.pack_propagate(0)
+		f.pack()
+		
+		if self._winner == self.HUMAN_PLAYER:
+			msg = Message(f, text="You win!")
+		else:
+			msg = Message(f, text="Game over. You lose.")
+		msg.pack()
+		b = Button(f, text="OK", command=popup.destroy)
+		b.pack()
+		
 			
 	def get_winning_player(self):
 		'''Return textual representation of winning player.'''
@@ -269,6 +289,7 @@ class Game(Frame):
 	def reset(self):
 		'''New game!'''
 		
+		self.master.title("Battleship")
 		self._winner = None
 		
 		# reset both grids
