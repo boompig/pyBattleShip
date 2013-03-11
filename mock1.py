@@ -237,16 +237,13 @@ class Game(Frame):
 		self.ai.set_shot_result(result)
 				
 		return result
-			
-	def _shot(self, event):
-		'''Process a shooting event.
-		event should be the Tkinter event triggered by tag_bind
-		This is a callback function.'''
-	
-		id = self._their_grid.find_withtag(CURRENT)[0]
-		# here we can safely process the shot
+		
+	def _process_human_shot(self, id):
+		'''Given the shot from the human player, react to it.
+		Return the result.'''
+		
 		result = self._their_grid.process_shot(id)
-		# disable square regardless of result=
+		# disable square regardless of result
 		self._their_grid.itemconfig(id, state=DISABLED)
 		shot = self._their_grid._tiles[id]
 		
@@ -256,8 +253,18 @@ class Game(Frame):
 		
 			if self._their_grid._model.all_sunk():
 				self._winner = self.HUMAN_PLAYER
+				
+		return result
+			
+	def _shot(self, event):
+		'''Process a shooting event.
+		event should be the Tkinter event triggered by tag_bind
+		This is a callback function.'''
+	
+		id = self._their_grid.find_withtag(CURRENT)[0]
+		result = self._process_human_shot(id)
 		
-		if result != Ship.HIT and result != Ship.SUNK:
+		if result == Ship.MISS:
 			# disable opponent's grid during their turn
 			result = Ship.NULL
 			self._their_grid.disable()
