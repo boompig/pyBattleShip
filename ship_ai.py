@@ -4,15 +4,15 @@ March 5, 2013
 '''
 
 #################################################
-#                    IMPORTS                        #
+#                    IMPORTS                    #
 from ship_model import Ship
 from grid_model import GridModel
-#                                                #
+#                                               #
 #################################################
-#                                                #
+#                                               #
 from collections import deque
 from sys import maxint, stdout
-#                                                #
+#                                               #
 #################################################
 
 def minint():

@@ -4,7 +4,7 @@ March 4, 2013
 '''
 
 #################
-#    IMPORTS        #
+#    IMPORTS    #
 #################
 
 from Tkinter import *
@@ -15,9 +15,9 @@ from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
 from ship_panel import ShipPanel
 
-#################
+####################
 #    MAIN CLASS    #
-#################
+####################
 
 class PlayerController(Frame):
     '''The UI manager for all of the player's possible actions with their grid.
