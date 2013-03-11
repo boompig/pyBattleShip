@@ -213,6 +213,30 @@ class Game(Frame):
 			self.HUMAN_PLAYER: "human",
 			self.AI_PLAYER : "ai"
 		} [self._winner]
+		
+	def _process_ai_shot(self):
+		'''Get the shot from the AI.
+		Process the given shot by the AI.
+		Return the result of the shot'''
+	
+		shot = self.ai.get_shot()
+		tag_id = self._my_grid._get_tile_name(*shot)
+		id = self._my_grid.find_withtag(tag_id)[0]
+		result = self._my_grid.process_shot(id)
+		
+		if result == Ship.HIT or result == Ship.SUNK:
+			self._set_ship_hit(self._my_grid._model.get_ship_at(*shot))
+			
+		if result == Ship.SUNK:
+			self._set_ship_sunk(self._my_grid._model.get_sunk_ship(*shot).get_short_name())
+		
+			if self._my_grid._model.all_sunk():
+				self._winner = self.AI_PLAYER
+				
+		# update the AI with the shot's result
+		self.ai.set_shot_result(result)
+				
+		return result
 			
 	def _shot(self, event):
 		'''Process a shooting event.
@@ -237,23 +261,8 @@ class Game(Frame):
 			# disable opponent's grid during their turn
 			result = Ship.NULL
 			self._their_grid.disable()
-			while result != Ship.MISS:
-				shot = self.ai.get_shot()
-				tag_id = self._my_grid._get_tile_name(*shot)
-				id = self._my_grid.find_withtag(tag_id)[0]
-				result = self._my_grid.process_shot(id)
-				
-				if result == Ship.HIT or result == Ship.SUNK:
-					self._set_ship_hit(self._my_grid._model.get_ship_at(*shot))
-				
-				if result == Ship.SUNK:
-					self._set_ship_sunk(self._my_grid._model.get_sunk_ship(*shot).get_short_name())
-				
-					if self._my_grid._model.all_sunk():
-						self._winner = self.AI_PLAYER
-						break
-				
-				self.ai.set_shot_result(result)
+			while result != Ship.MISS and self._winner is None:
+				result = self._process_ai_shot()
 				
 			# re-enable their grid
 			self._their_grid.enable()
