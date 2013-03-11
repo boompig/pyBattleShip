@@ -243,7 +243,7 @@ def foo():
     grid.finalize()
     
     ai = ShipAI(grid)
-    ai.read_stat_model("stat")
+    ai.read_stat_model("ai/stat")
     #ai.show_stat_model()
     
     result = Ship.NULL

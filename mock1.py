@@ -4,7 +4,7 @@ March 4, 2013
 '''
 
 #################
-#    IMPORTS        #
+#    IMPORTS    #
 #################
 
 from Tkinter import *
@@ -18,9 +18,9 @@ from ship_war_panel import ShipWarPanel
 from ship_panel import ShipPanel
 from player_controller import PlayerController
 
-#################
+####################
 #    MAIN CLASS    #
-#################
+####################
 
 class Game(Frame):
     '''Top-level Frame managing top-level events. Interact directly with user.'''
@@ -326,7 +326,7 @@ class Game(Frame):
         for ship, button in self._my_grid_frame._ship_panel._ship_buttons.iteritems():
             button.config(foreground="black")
         
-        self.ai.read_stat_model("stat")
+        self.ai.read_stat_model("ai/stat")
         self._set_ships = {ship : False for ship in Ship.SIZES.keys()}
         
         for x, y in self._my_grid.get_tiles():
@@ -400,7 +400,7 @@ class Game(Frame):
         '''Automatically place the ships according to a preset configuration.
         This should only be enabled in debugging mode.'''
     
-        ships = ShipLoader.read("sample_ship_config.txt")
+        ships = ShipLoader.read("sample_configurations/sample_ship_config.txt")
         
         for ship in ships:
             self._my_grid_frame._ship_panel._ship_buttons[ship._type].invoke()
