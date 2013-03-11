@@ -4,15 +4,15 @@ March 4, 2013
 '''
 
 #################
-#    IMPORTS        #
+#    IMPORTS    #
 #################
 
 from ship_model import Ship
 from Tkinter import *
 
-#################
+####################
 #    MAIN CLASS    #
-#################
+####################
 
 class ShipPanel(Frame):
     '''

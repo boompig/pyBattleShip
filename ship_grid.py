@@ -4,7 +4,7 @@ March 4, 2013
 '''
 
 #################
-#    IMPORTS        #
+#    IMPORTS    #
 #################
 
 from Tkinter import *
@@ -15,9 +15,9 @@ from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
 from ship_panel import ShipPanel
 
-#################
+####################
 #    MAIN CLASS    #
-#################
+####################
 
 class ShipGrid(Canvas):
     '''The UI manager for a player's grid in a game of battleship.
