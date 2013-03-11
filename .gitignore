@@ -1,3 +1,9 @@
 #	Compiled Source	#
 #####################
 *.pyc
+
+# ignore my experimental directories
+serv
+serv/*
+web
+web/*
