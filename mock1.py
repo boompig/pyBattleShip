@@ -56,6 +56,7 @@ class Game(Frame):
     def _create_ui(self):
         '''Create all UI elements for the game.'''
         
+        self._create_menu()
         self._add_grids()
         self._add_staging_panel()
         self._add_ship_panels()
@@ -64,6 +65,52 @@ class Game(Frame):
         # here 50 is an estimate for the size of the button
         self.config(height=self.Y_PADDING * 3 + self._my_grid.size + 50)
         self.set_all_bgs("white", self)
+        
+    def _show_popup(self, title, text):
+        '''Show a popup with the given text as the content.'''
+        
+        self._popup = Toplevel(self)
+        self._popup.title(title)
+        f = Frame(self._popup, width=500) # a bit arbitrary
+        f.pack()
+        
+        msg = Message(f, text=text)
+        msg.pack()
+        
+        b = Button(f, text="OK", command=self._destroy_popup)
+        b.pack()
+        
+        self._popup.bind("<Return>", self._destroy_popup)
+        self._popup.grab_set()
+        self._popup.focus_set()
+        self.master.wait_window(self._popup)
+        
+    def _destroy_popup(self, event=None):
+        '''Process removal of the popup.'''
+    
+        self.master.focus_set()
+        self._popup.grab_release()
+        self._popup.destroy()
+        
+    def _show_rules(self):
+        '''Show the help dialog in a new window.'''
+        
+        # load the help page
+        help_page_location = "help/rules.txt"
+        f = open(help_page_location, "r")
+        lines = f.read()
+        f.close()
+        self._show_popup("Rules", lines)
+        
+    def _create_menu(self):
+        '''Create the menu in the GUI.'''
+    
+        menubar = Menu(self)
+        help_menu = Menu(menubar, tearoff=0)
+        help_menu.add_command(label="Rules", command=self._show_rules)
+        
+        menubar.add_cascade(label="Help", menu=help_menu)
+        self.master.config(menu=menubar)
         
     def _add_staging_panel(self):
         '''Create the placement/ship staging panel.'''
@@ -129,6 +176,16 @@ class Game(Frame):
         
         for child in frame.winfo_children():
             child.pack_forget()
+            
+    def show_game_over_popup(self):
+        '''Show a popup with a dialog saying the game is over, and showing the winning player.'''
+        
+        if self._winner == self.HUMAN_PLAYER:
+            msg = "You win!"
+        else:
+            msg = "Game over. You lose."
+            
+        self._show_popup("Game Over", msg)
         
     def process_state(self):
         '''Simple state controller to enable and disable certain widgets depending on the state.
@@ -185,26 +242,6 @@ class Game(Frame):
             self._their_grid.disable()
             self.master.title("Battleship (Game Over)")
             self.show_game_over_popup()
-            print "GAME OVER"
-            print "The %s player won" % self.get_winning_player()
-            
-    def show_game_over_popup(self):
-        '''Show a popup with a dialog saying the game is over, and showing the winning player.'''
-    
-        popup = Toplevel(self)
-        popup.title("Game Over")
-        f = Frame(popup, width=500)
-        #f.pack_propagate(0)
-        f.pack()
-        
-        if self._winner == self.HUMAN_PLAYER:
-            msg = Message(f, text="You win!")
-        else:
-            msg = Message(f, text="Game over. You lose.")
-        msg.pack()
-        b = Button(f, text="OK", command=popup.destroy)
-        b.pack()
-        
             
     def get_winning_player(self):
         '''Return textual representation of winning player.'''

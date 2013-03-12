@@ -1,0 +1,7 @@
+=== Rules ===
+== Setup Phase ==
+1. You must place all of your ships on the board
+2. No two ships may overlap
+== Playing Phase ==
+1. Pick any of your opponent's squares to shoot. If you hit an opponent's ship, you may shoot again. If you miss, it is the other player's turn.
+2. If you sink all of your opponent's ships, you win. If they sink all of your ships first, they win.
