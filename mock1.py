@@ -18,18 +18,122 @@ from ship_war_panel import ShipWarPanel
 from ship_panel import ShipPanel
 from player_controller import PlayerController
 
+class GameController(object):
+    '''
+    This class is only used as a middle-man for communication with the model.
+    When the GUI does not need the model, it processes its own events.
+    '''
+
+    def __init__(self): 
+        '''Create a main controller for the game.'''
+        
+        # create and run the game
+        app = Tk()
+    
+        self._game_frame = Game(app)
+        self._game_frame.pack(fill=BOTH, expand=1)
+        self._game_frame.grab_set()
+        self._game_frame.focus_set()
+        
+        self.create_hooks()
+        
+        app.mainloop()
+        
+        # create the GUI
+        # create the hooks
+        pass
+        
+    def _create_keyboard_shortcuts(self):
+        '''Create the game's keyboard shortcuts.'''
+        
+        d = {
+            "P" : self._game_frame.auto_place,
+            "<Return>" : self._game_frame.play_game
+        }
+        
+        for key_binding, fn in d.iteritems():
+            print "{} <-- {}".format(key_binding, fn.__name__)
+            self._game_frame.bind(key_binding, fn)
+        
+    def create_hooks(self):
+        '''Create listeners (hooks) to the GUI for relevant items.'''
+        
+        self._create_keyboard_shortcuts()
+        # add listener for a 'place' event
+        # respond to the 'place' event by figuring out what it means and relaying info back to the model
+        pass
+       
+    def autoplace_ships_callback(self, event=None):
+        '''Respond to the `dev` event of auto-placing all the ships.
+        '''
+        
+        # ships = read_ship_configuration(autoplace_config_file)
+        # if model.check_ship_config(ships) <-- make sure everything is kosher
+        #   model.set_ship_config(ships)
+        #   update the view based on the model
+        # else
+        #   display warning on view
+        pass
+       
+    def play_callback(self, event=None):
+        # if ships are all placed
+        #   update model
+        #   update view
+        # else
+        #   display warning on view
+        pass
+        
+    def place_ship_callback(self, event=None):
+        '''Respond to a place event.'''
+        
+        # pos = get_tile_from_mouse_position
+        # if ship can be placed at current pos
+        #   update model
+        #   update view
+        # else
+        #   display warning on view
+        pass
+
+    def shot_square_callback(self):
+        '''Respond to a shooting event.'''
+
+        # pos = get_tile_from_mouse_position
+        # if tile is NULL (has never been fired on)
+        #   result = model.fire_on_pos(pos)
+        #   view.update_with_shot_result(result, pos)
+        # else
+        #   display warning on view
+        pass
+        
+    def new_game_callback(self):
+        '''Start a new game.'''
+        
+        # reset the model
+        # reset the view
+        pass
+        
 ####################
 #    MAIN CLASS    #
 ####################
 
 class Game(Frame):
     '''Top-level Frame managing top-level events. Interact directly with user.'''
+    
+    ############ flags ##################
+    ''' set this to True if you want to see the dev menu
+        The dev menu has these and other features:
+            - skip parts of the game so you can "join" at a certain point"
+            - simulate events
+        '''
+    DEV_FLAG = True
+    #####################################
 
     ############ geometry ###############
     X_PADDING = 25
     Y_PADDING = 25
     SHIP_PANEL_WIDTH = 150
     BUTTON_PANEL_HEIGHT = 50
+    BUTTON_PADDING = 5
     #####################################
 
     ########### states ##################
@@ -65,6 +169,13 @@ class Game(Frame):
         # these are 'controller' elements that should really be in another class
         self.ai = ShipAI(self._their_grid._model, self._my_grid._model)
         self.reset()
+        
+    def show_warning(self, msg):
+        '''Show a warning msg that a certain action is illegal.
+        Allows user to understand what's going on (i.e. why their action failed.
+        '''
+        
+        pass
         
     def _create_ui(self):
         '''Create all UI elements for the game.'''
@@ -118,10 +229,20 @@ class Game(Frame):
         '''Create the menu in the GUI.'''
     
         menubar = Menu(self)
+        
+        file_menu = Menu(menubar, tearoff=0)
+        file_menu.add_command(label="New Game", command=self.reset)
+        menubar.add_cascade(label="File", menu=file_menu)
+        
+        if self.DEV_FLAG:
+            dev_menu = Menu(menubar, tearoff=0)
+            dev_menu.add_command(label="Auto-place ships", command=self.auto_place)
+            menubar.add_cascade(label="Dev", menu=dev_menu)
+        
         help_menu = Menu(menubar, tearoff=0)
         help_menu.add_command(label="Rules", command=self._show_rules)
-        
         menubar.add_cascade(label="Help", menu=help_menu)
+        
         self.master.config(menu=menubar)
         
     def _add_staging_panel(self):
@@ -436,7 +557,7 @@ class Game(Frame):
         
         return self._my_grid_frame._ship_panel.get_current_ship()
         
-    def play_game(self):
+    def play_game(self, event=None):
         '''Process the event to stop placement and start playing the game.
         '''
         
@@ -445,7 +566,7 @@ class Game(Frame):
         self._state = self.PLAYING
         self.process_state()
         
-    def auto_place(self):
+    def auto_place(self, event=None):
         '''Automatically place the ships according to a preset configuration.
         This should only be enabled in debugging mode.'''
     
@@ -459,26 +580,19 @@ class Game(Frame):
     def _make_buttons(self):
         '''Create action buttons at the bottom.'''
     
-        button_row = self._my_grid.size + self.Y_PADDING + 40
+        button_row = self._my_grid.size + self.Y_PADDING + (self.BUTTON_PANEL_HEIGHT - 2 * self.BUTTON_PADDING)
         button_frame = Frame(self)
         button_frame.place(x=self._my_grid.size - self.X_PADDING, y=button_row)
     
         reset_button = Button(button_frame, text="Reset", command=self.reset)
-        reset_button.pack(side=LEFT, padx=5, pady=5)
+        reset_button.pack(side=LEFT, padx=self.BUTTON_PADDING, pady=self.BUTTON_PADDING)
         
         self._play_game_button = Button(button_frame, text="Play", command=self.play_game)
-        self._play_game_button.pack(side=LEFT, padx=5, pady=5)
+        self._play_game_button.pack(side=LEFT, padx=self.BUTTON_PADDING, pady=self.BUTTON_PADDING)
         
         self._my_grid_frame._autoplace_button = Button(button_frame, text="Auto-place ships", command=self.auto_place)
-        self._my_grid_frame._autoplace_button.pack(side=LEFT, padx=5, pady=5)
+        self._my_grid_frame._autoplace_button.pack(side=LEFT, padx=self.BUTTON_PADDING, pady=self.BUTTON_PADDING)
         
         
 if __name__ == "__main__":
-    app = Tk()
-    
-    game = Game(app)
-    game.pack(fill=BOTH, expand=1)
-    
-    app.mainloop()
-    pass
-    
+    g = GameController()
