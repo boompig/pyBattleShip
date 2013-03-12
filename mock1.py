@@ -48,7 +48,7 @@ class GameController(object):
         
         d = {
             "P" : self._game_frame.auto_place,
-            "<Return>" : self._game_frame.play_game
+            "<space>" : self._game_frame.play_game
         }
         
         for key_binding, fn in d.iteritems():
@@ -76,6 +76,9 @@ class GameController(object):
         pass
        
     def play_callback(self, event=None):
+        '''Prepare the UI and model to actually shoot at the other player.
+        If some error occurs, abort the operation and display warning in the UI.'''
+    
         # if ships are all placed
         #   update model
         #   update view
