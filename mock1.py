@@ -29,19 +29,32 @@ class Game(Frame):
     X_PADDING = 25
     Y_PADDING = 25
     SHIP_PANEL_WIDTH = 150
+    BUTTON_PANEL_HEIGHT = 50
     #####################################
-    
+
     ########### states ##################
     PLACING = 0
     PLAYING = 1
     GAME_OVER = 2
     #####################################
-    
+
     ############ players ################
     AI_PLAYER = 0
     HUMAN_PLAYER = 1
     #####################################
-    
+
+    ############ colors #################
+    BACKGROUND_COLOR = "white"
+    #####################################
+
+    ###### window titles and messages ################
+    GAME_OVER_POPUP_TITLE = "Game Over"
+    GAME_OVER_WIN_MSG = "You win!"
+    GAME_OVER_LOSE_MSG = "Game over. You lose."
+    WINDOW_TITLE_GAME_OVER = "Battleship (Game Over)"
+    WINDOW_TITLE_NORMAL = "Battleship"
+    ##################################################
+
     def __init__(self, master):
         '''Create the UI for a game of battleship.'''
     
@@ -62,9 +75,8 @@ class Game(Frame):
         self._add_ship_panels()
         self._make_buttons()
         
-        # here 50 is an estimate for the size of the button
-        self.config(height=self.Y_PADDING * 3 + self._my_grid.size + 50)
-        self.set_all_bgs("white", self)
+        self.config(height=self.Y_PADDING * 3 + self._my_grid.size + self.BUTTON_PANEL_HEIGHT)
+        self.set_all_bgs(self.BACKGROUND_COLOR, self)
         
     def _show_popup(self, title, text):
         '''Show a popup with the given text as the content.'''
@@ -180,12 +192,12 @@ class Game(Frame):
     def show_game_over_popup(self):
         '''Show a popup with a dialog saying the game is over, and showing the winning player.'''
         
-        if self._winner == self.HUMAN_PLAYER:
-            msg = "You win!"
-        else:
-            msg = "Game over. You lose."
+        msg = {
+            self.HUMAN_PLAYER : self.GAME_OVER_WIN_MSG,
+            self.AI_PLAYER : self.GAME_OVER_LOSE_MSG
+        } [self._winner]
             
-        self._show_popup("Game Over", msg)
+        self._show_popup(self.GAME_OVER_POPUP_TITLE, msg)
         
     def process_state(self):
         '''Simple state controller to enable and disable certain widgets depending on the state.
@@ -240,7 +252,7 @@ class Game(Frame):
         elif self._state == self.GAME_OVER:
             # disable everything except for the reset button
             self._their_grid.disable()
-            self.master.title("Battleship (Game Over)")
+            self.master.title(self.WINDOW_TITLE_GAME_OVER)
             self.show_game_over_popup()
             
     def get_winning_player(self):
@@ -342,7 +354,7 @@ class Game(Frame):
     def reset(self):
         '''New game!'''
         
-        self.master.title("Battleship")
+        self.master.title(self.WINDOW_TITLE_NORMAL)
         self._winner = None
         
         # reset both grids
@@ -463,11 +475,8 @@ class Game(Frame):
         
 if __name__ == "__main__":
     app = Tk()
-    app.title("Battleship")
     
     game = Game(app)
-    #game.lift(aboveThis=root)
-    #game.pack()
     game.pack(fill=BOTH, expand=1)
     
     app.mainloop()
