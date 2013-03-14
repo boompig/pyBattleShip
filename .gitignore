@@ -1,5 +1,5 @@
-#	Compiled Source	#
-#####################
+# Compiled Source #
+###################
 *.pyc
 
 # ignore my experimental directories
