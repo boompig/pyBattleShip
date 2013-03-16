@@ -2,6 +2,10 @@
 ###################
 *.pyc
 
+# ignore Aptana project files
+.project
+.pydevproject
+
 # ignore my experimental directories
 serv
 serv/*
