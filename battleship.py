@@ -1,14 +1,9 @@
 from Tkinter import *
 from ship_model import Ship, ShipLoader
-import time
 from grid_model import GridModel
 from ship_ai import ShipAI
-from ship_placement_panel import ShipPlacementPanel
-from ship_grid import ShipGrid
-from ship_war_panel import ShipWarPanel
-from ship_panel import ShipPanel
-from player_controller import PlayerController
 import mock1
+from player_controller import PlayerController
 
 class GameController(object):
     '''
@@ -24,6 +19,15 @@ class GameController(object):
         '''
     DEV_FLAG = True
     #####################################
+    
+    ############ delays #################
+    AI_SHOT_DELAY = 1.0
+    #####################################
+    
+    ############ players ################
+    AI_PLAYER = 0
+    HUMAN_PLAYER = 1
+    #####################################
 
     def __init__(self): 
         '''Create a main controller for the game.
@@ -32,10 +36,14 @@ class GameController(object):
         # create the UI
         app = Tk()
     
-        self._game_frame = mock1.Game(app)
-        self._game_frame.pack(fill=BOTH, expand=1)
-        self._game_frame.grab_set()
-        self._game_frame.focus_set()
+        self.game_frame = mock1.Game(app)
+        self.game_frame.pack(fill=BOTH, expand=1)
+        self.game_frame.grab_set()
+        self.game_frame.focus_set()
+        
+        # and the individual controllers
+        self.my_controller = PlayerController(self.game_frame.my_grid_frame)
+        self.their_controller = PlayerController(self.game_frame.their_grid_frame)
         
         # set initial variables
         self.new_game_callback()
@@ -54,7 +62,7 @@ class GameController(object):
     def exit_callback(self, event=None):
         '''Quit the game by closing the parent window.'''
         
-        self._game_frame.master.destroy()
+        self.game_frame.master.destroy()
         
     def _create_keyboard_shortcuts(self):
         '''Create the game's keyboard shortcuts.'''
@@ -64,15 +72,15 @@ class GameController(object):
             "<space>" : self.play_callback,
             "X" : self.exit_callback,
             "N" : self.new_game_callback,
-            "?" : lambda event: self._game_frame.show_keyboard_shortcuts()
+            "?" : lambda event: self.game_frame.show_keyboard_shortcuts()
         }
         
         for key_binding, fn in d.iteritems():
             print "{} <-- {}".format(key_binding, fn.__name__)
-            self._game_frame.master.bind(key_binding, fn) # has to be master
+            self.game_frame.master.bind(key_binding, fn) # has to be master
         
     def warn_hi(self):
-        self._game_frame.show_warning("hi")
+        self.game_frame.show_warning("hi")
         
     def create_hooks(self):
         '''Create listeners (hooks) to the GUI for relevant items.'''
@@ -80,16 +88,20 @@ class GameController(object):
         self._create_keyboard_shortcuts()
         # add listener for a 'place' event
         # respond to the 'place' event by figuring out what it means and relaying info back to the model
+        self.game_frame.my_grid_frame.ship_panel.bind("<Button-1>", self.place_ship_callback)
+        for ship in Ship.SHORT_NAMES:
+            self.game_frame.my_grid_frame.ship_panel.ship_buttons[ship].config(command=self.stage_ship_callback)
+        
         
         # add callback events to the frame's buttons
-        self._game_frame.play_game_button.config(command=self.play_callback)
+        self.game_frame.play_game_button.config(command=self.play_callback)
         
         # menus
-        self._game_frame.file_menu.entryconfig(self._game_frame.menus["file_new_game"], command=self.new_game_callback)
-        self._game_frame.file_menu.entryconfig(self._game_frame.menus["file_exit"], command=self.exit_callback)
+        self.game_frame.file_menu.entryconfig(self.game_frame.menus["file_new_game"], command=self.new_game_callback)
+        self.game_frame.file_menu.entryconfig(self.game_frame.menus["file_exit"], command=self.exit_callback)
         
         if GameController.DEV_FLAG:
-            self._game_frame.dev_menu.entryconfig(self._game_frame.menus["dev_auto_place"], command=self.autoplace_ships_callback)
+            self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_auto_place"], command=self.autoplace_ships_callback)
     
     def autoplace_ships_callback(self, event=None):
         '''Respond to the `dev` event of auto-placing all the ships.
@@ -100,9 +112,9 @@ class GameController(object):
             ships = ShipLoader.read("sample_configurations/sample_ship_config.txt")
             
             for ship in ships:
-                self._game_frame._my_grid_frame._ship_panel._ship_buttons[ship._type].invoke()
-                self._game_frame._my_grid.add_ship(*ship.coords(), ship=ship._type, vertical=ship._vertical=="v", callback=self._game_frame.get_add_ship_callback())
-            self._game_frame.unselect_ship()
+                self.game_frame.my_grid_frame.ship_panel.ship_buttons[ship._type].invoke()
+                self.game_frame._my_grid.add_ship(*ship.coords(), ship=ship._type, vertical=ship._vertical=="v", callback=self.game_frame.get_add_ship_callback())
+            self.game_frame.unselect_ship()
         
         # ships = read_ship_configuration(autoplace_config_file)
         # if model.check_ship_config(ships) <-- make sure everything is kosher
@@ -123,11 +135,26 @@ class GameController(object):
         #   update view
         # else
         #   display warning on view
-        self._game_frame._state = self._game_frame.PLAYING
-        self._game_frame.process_state()
+        self.game_frame._state = self.game_frame.PLAYING
+        self.game_frame.process_state()
+       
+    def stage_ship_callback(self, event=None):
+        '''Move a ship to the staging area.'''
+        
+        #ship = get_selected_ship()
+        #move ship to staging area
+        #that's about it
+        
+        if self.game_frame.my_grid_frame.ship_panel.get_current_ship() is not None:
+            s = Ship(0, 0, self.game_frame.my_grid_frame.ship_panel.get_current_ship(), True)
+            self.game_frame.my_grid_frame.staging_panel.add_ship(s)
+        
+        pass
         
     def place_ship_callback(self, event=None):
         '''Respond to a place event.'''
+        
+        print "Placed"
         
         # pos = get_tile_from_mouse_position
         # if ship can be placed at current pos
@@ -152,19 +179,19 @@ class GameController(object):
         '''Start a new game.
         This method can be called at any time.'''
         
-        self._game_frame._winner = None
-        self._game_frame._set_ships = {ship : False for ship in Ship.SIZES.keys()}
+        self.game_frame._winner = None
+        self.game_frame._set_ships = {ship : False for ship in Ship.SIZES.keys()}
         
         # reset the model
-        self._game_frame._my_grid.reset()
-        self._game_frame._their_grid.reset()
+        self.game_frame._my_grid.reset()
+        self.game_frame._their_grid.reset()
         
         # reset AI
-        self._game_frame.ai.reset()
-        self._game_frame.ai.read_stat_model("ai/stat")
+        self.game_frame.ai.reset()
+        self.game_frame.ai.read_stat_model("ai/stat")
         
         # reset the view
-        self._game_frame.reset()
+        self.game_frame.reset()
         
 if __name__ == "__main__":
     g = GameController()

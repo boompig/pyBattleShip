@@ -3,3 +3,4 @@ P		auto-place ships
 N		restart the game
 ?		show keyboard shortcuts
 <space>		lock in ships
+
