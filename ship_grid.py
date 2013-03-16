@@ -3,10 +3,6 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-#################
-#    IMPORTS    #
-#################
-
 from Tkinter import *
 from ship_model import Ship, ShipLoader
 import time
@@ -14,10 +10,6 @@ from grid_model import GridModel
 from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
 from ship_panel import ShipPanel
-
-####################
-#    MAIN CLASS    #
-####################
 
 class ShipGrid(Canvas):
     '''The UI manager for a player's grid in a game of battleship.
@@ -31,7 +23,7 @@ class ShipGrid(Canvas):
     ####################################
     
     ############## colors ##############
-    RECT_NULL_FILL = "slate blue"
+    RECT_NULL_FILL = "DodgerBlue2"
     RECT_MISS_FILL = "grey"
     RECT_HIT_FILL = "red"
     RECT_SUNK_FILL = "powder blue"
@@ -173,7 +165,7 @@ class ShipGrid(Canvas):
         x_id = chr(97 + x) # here we assume GRID_SIZE <= 26
         y_id = str(y + 1)
         return "tile%s%s" % (x_id, y_id)
-        
+
     def bind_tile(self, x, y, function):
         '''Bind the given event to the mouse-click of a tile.'''
         
@@ -223,26 +215,3 @@ class ShipGrid(Canvas):
         '''Return all coordinates.'''
     
         return self._tiles.values()
-        
-#################
-#    TESTER        #
-#################
-
-class Master(Frame):
-    def __init__(self, m):
-        Frame.__init__(self, m)
-        
-        p = PlayerController(root)
-        p.pack()
-        
-        b = Button(self,text="play", command=p.play)
-        b.pack()
-
-if __name__ == "__main__":
-    root = Tk()
-    m = Master(root)
-    m.pack()
-    #sp = ShipPlacementPanel()
-    
-    
-    root.mainloop()
