@@ -2,6 +2,9 @@
 ###################
 *.pyc
 
+# ignore vim swap files
+*.*.swp
+
 # ignore Aptana project files
 .project
 .pydevproject

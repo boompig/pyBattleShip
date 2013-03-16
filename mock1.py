@@ -14,6 +14,7 @@ from ship_war_panel import ShipWarPanel
 from ship_panel import ShipPanel
 from player_controller import PlayerController, PlayerGridFrame
 import battleship
+from enemy_ship_panel import EnemyShipPanel
 
 class Game(Frame):
     '''Top-level Frame managing top-level events. Interact directly with user.'''
@@ -62,8 +63,7 @@ class Game(Frame):
         Allows user to understand what's going on (i.e. why their action failed.
         '''
         
-        if title is None:
-            title = "Warning"
+        title = ("Warning" if title is None else title)
         
         self._show_popup(title, msg)
         
@@ -191,8 +191,8 @@ class Game(Frame):
         self.my_grid_frame._ship_war_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 2)
         ##################################################################
         
-        ###################### ShipWarPanel for Adversary ################
-        self.their_grid_frame.ship_panel = ShipPanel(self)
+        ###################### EnemyShipPanel ############################
+        self.their_grid_frame.ship_panel = EnemyShipPanel(self)
         self.their_grid_frame.ship_panel.place(x=self._my_grid.size * 2 + self.X_PADDING * 3 + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING * 4)
         ##################################################################
             
@@ -249,9 +249,6 @@ class Game(Frame):
         
         self._their_grid.config(state=NORMAL)
         self._their_grid.enable()
-        
-        for ship in Ship.SHORT_NAMES:
-            self.their_grid_frame.ship_panel.set_placed(ship)
         
         self.play_game_button.config(state=DISABLED)
         
