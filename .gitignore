@@ -11,3 +11,6 @@ serv
 serv/*
 web
 web/*
+
+# ignore progress files that I make for myself
+TODO

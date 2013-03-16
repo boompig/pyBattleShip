@@ -57,24 +57,15 @@ class Game(Frame):
         self.ai = ShipAI(self._their_grid._model, self._my_grid._model)
         self.reset()
         
-    def show_warning(self, msg):
+    def show_warning(self, msg, title=None):
         '''Show a warning msg that a certain action is illegal.
         Allows user to understand what's going on (i.e. why their action failed.
         '''
         
-        self.warning_frame = Frame(
-            self, 
-            background=self.WARNING_BACKGROUND, 
-            width=self.winfo_width(), 
-            height=self.WARNING_BAR_HEIGHT
-        )
-        self.warning_frame.place(x=0, y=self.winfo_height() - self.WARNING_BAR_HEIGHT)
+        if title is None:
+            title = "Warning"
         
-        l = Label(self.warning_frame, text=msg, background=self.WARNING_BACKGROUND)
-        l.grid(row=0, column=0, sticky=W)
-        
-        b = Button(self.warning_frame, text="x", command=self.warning_frame.destroy)
-        b.grid(row=0, column=1, sticky=E)
+        self._show_popup(title, msg)
         
     def _create_ui(self):
         '''Create all UI elements for the game.'''

@@ -129,14 +129,13 @@ class GameController(object):
         If some error occurs, abort the operation and display warning in the UI.'''
     
         #TODO sanity check before transition
-    
-        # if ships are all placed
-        #   update model
-        #   update view
-        # else
-        #   display warning on view
-        self.game_frame._state = self.game_frame.PLAYING
-        self.game_frame.process_state()
+        if self.game_frame._my_grid._model.has_all_ships():
+            #   update view
+            self.game_frame._state = self.game_frame.PLAYING
+            self.game_frame.process_state()
+            # TODO update model <<< FINALIZE should probably be here
+        else:
+            self.game_frame.show_warning("Cannot start the game: you have not placed all your ships.")
        
     def stage_ship_callback(self, event=None):
         '''Move a ship to the staging area.'''
