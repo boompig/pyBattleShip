@@ -53,6 +53,11 @@ class ShipGrid(Canvas):
         '''Return the coordinates of the tile with the given Tkinter ID.'''
     
         return self._tiles[id]
+    
+    def get_tile_id(self, x, y):
+        '''Return the id of this tile'''
+        
+        return self._coords[(x, y)]
             
     def process_shot(self, id, callback=None):
         '''Shoot this tile. Return the result.'''
@@ -177,6 +182,7 @@ class ShipGrid(Canvas):
         '''Create a grid, complete with labels.'''
     
         self._tiles = {}
+        self._coords = {}
     
         for x in range(self.GRID_SIZE):
             x_id = chr(97 + x) # here we assume GRID_SIZE <= 26
@@ -210,6 +216,7 @@ class ShipGrid(Canvas):
                 )
                 
                 self._tiles[id] = (x, y)
+                self._coords[(x, y)] = id
                 
     def get_tiles(self):
         '''Return all coordinates.'''

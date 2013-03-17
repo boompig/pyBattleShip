@@ -1,6 +1,7 @@
 X		exit
-P		auto-place ships
 N		restart the game
 ?		show keyboard shortcuts
+P		auto-place ships (dev mode only)
+F		fire on random square (dev mode only)
 <space>		lock in ships
 

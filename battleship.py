@@ -5,6 +5,7 @@ from ship_ai import ShipAI
 import mock1
 from player_controller import PlayerController
 import time
+import random
 
 class GameController(object):
     '''
@@ -73,7 +74,8 @@ class GameController(object):
             "<space>" : self.play_callback,
             "X" : self.exit_callback,
             "N" : self.new_game_callback,
-            "?" : lambda event: self.game_frame.show_keyboard_shortcuts()
+            "?" : lambda event: self.game_frame.show_keyboard_shortcuts(),
+            "F" : self.random_shot_callback
         }
         
         for key_binding, fn in d.iteritems():
@@ -105,6 +107,7 @@ class GameController(object):
         
         if GameController.DEV_FLAG:
             self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_auto_place"], command=self.autoplace_ships_callback)
+            self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_random_shot"], command=self.random_shot_callback)
     
     def autoplace_ships_callback(self, event=None):
         '''Respond to the `dev` event of auto-placing all the ships.
@@ -165,18 +168,26 @@ class GameController(object):
         # else
         #   display warning on view
         pass
-
-    def shot_square_callback(self, event=None):
-        '''Respond to a shooting event.'''
-
-        # pos = get_tile_from_mouse_position
-        # if tile is NULL (has never been fired on)
-        #   result = model.fire_on_pos(pos)
-        #   view.update_with_shot_result(result, pos)
-        # else
-        #   display warning on view
-        id = self.game_frame.their_grid.find_withtag(CURRENT)[0]
-        result = self.process_human_shot(id)
+    
+    def random_shot_callback(self, event=None):
+        '''Shoot at a random unshot square.
+        Will only execute in play state.'''
+        
+        if self.game_frame._state == mock1.Game.PLAYING:
+            grid = self.game_frame.their_grid._model
+            l2 = grid.get_null_squares()
+            shot = random.choice(tuple(l2))
+            self.shot_square(shot)
+        elif self.game_frame._state == mock1.Game.GAME_OVER:
+            self.game_frame.show_warning("Cannot shoot after the game is over")
+        elif self.game_frame._state == mock1.Game.PLACING:
+            self.game_frame.show_warning("Cannot shoot until after all your ships have been placed")
+    
+    def shot_square(self, shot):
+        '''Call this method when a human has made a shot.
+        The shot is the coordinate in the grid system of the shot.'''
+        
+        result = self.process_human_shot(shot)
         
         if result == Ship.MISS:
             # disable opponent's grid during their turn
@@ -190,15 +201,28 @@ class GameController(object):
         
         if self._winner is not None:
             self.game_over_callback()
+
+    def shot_square_callback(self, event=None):
+        '''Respond to a shooting event.'''
+
+        # pos = get_tile_from_mouse_position
+        # if tile is NULL (has never been fired on)
+        #   result = model.fire_on_pos(pos)
+        #   view.update_with_shot_result(result, pos)
+        # else
+        #   display warning on view
+        id = self.game_frame.their_grid.find_withtag(CURRENT)[0]
+        shot = self.game_frame.their_grid.get_tile_coords(id)
+        self.shot_square(shot)
             
-    def process_human_shot(self, id):
+    def process_human_shot(self, shot):
         '''Given the shot from the human player, react to it.
-        Return the result.'''
+        Return the result of the shot - HIT, MISS, SUNK.'''
         
+        id = self.game_frame.their_grid.get_tile_id(*shot)
         result = self.game_frame.their_grid.process_shot(id)
         # disable square regardless of result
         self.game_frame.their_grid.itemconfig(id, state=DISABLED)
-        shot = self.game_frame.their_grid._tiles[id]
         
         if result == Ship.SUNK:
             ship = self.game_frame.their_grid._model.get_sunk_ship(*shot)
@@ -243,7 +267,8 @@ class GameController(object):
         '''Call this when the game is over (one of the players has won).
         Initiate appropriate events in model and view.'''
         
-        self.game_frame.process_game_over_state()
+        self.game_frame._state = mock1.Game.GAME_OVER
+        self.game_frame.process_state()
         self.game_frame.show_game_over_popup(self._winner)
         
     def new_game_callback(self, event=None):

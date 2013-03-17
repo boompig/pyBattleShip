@@ -149,6 +149,9 @@ class Game(Frame):
             self.dev_menu.add_command(label="Auto Place")
             self.menus["dev_auto_place"] = count
             count += 1
+            self.dev_menu.add_command(label="Random Shot")
+            self.menus["dev_random_shot"] = count
+            count += 1
             menubar.add_cascade(label="Dev", menu=self.dev_menu)
         
         help_menu = Menu(menubar, tearoff=0)
@@ -188,6 +191,7 @@ class Game(Frame):
         
         ###################### ShipWarPanel ##############################
         self.my_grid_frame._ship_war_panel = ShipWarPanel(self)
+        self.my_grid_frame._ship_war_panel.config(height=self.my_grid_frame.winfo_height())
         self.my_grid_frame._ship_war_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 2)
         ##################################################################
         
@@ -275,6 +279,8 @@ class Game(Frame):
             self.process_placing_state()
         elif self._state == self.PLAYING:
             self.process_playing_state()
+        elif self._state == self.GAME_OVER:
+            self.process_game_over_state()
                 
     def _add_grid_events(self):
         '''Add events to the grids.'''

@@ -1,5 +1,6 @@
 from ship_model import Ship
 from sys import stdout
+import itertools
 
 class GridModel(object):
     '''Model for one grid.
@@ -77,6 +78,16 @@ class GridModel(object):
         
         return all([s.is_sunk() for s in self._ships.itervalues()])
         
+    def get_null_squares(self):
+        '''Return the set of all squares that have not yet been fired upon.
+        Actually returns an itertools object.'''
+        
+        all_squares = itertools.product(range(self.SIZE), range(self.SIZE))
+        #print tuple(all_squares)
+        l = itertools.ifilter(self.is_empty_square, all_squares)
+        #print tuple(l)
+        return l
+    
     def get_state(self, x, y):
         '''Return state of given square.'''
     
@@ -92,10 +103,12 @@ class GridModel(object):
     
         return 0 <= x < self.SIZE and 0 <= y < self.SIZE
         
-    def is_empty_square(self, x, y):
-        '''Not sure what this is or where used, but wrong.'''
+    def is_empty_square(self, sq):
+        '''Return True iff the square (x, y) has not been fired upon.'''
     
-        return self.get_state == Ship.NULL
+        #print sq
+        #print Ship.get_state_name(self.get_state(*sq))
+        return self.get_state(*sq) == Ship.NULL
         
     def _can_add_ship(self, s):
         '''This is a helper function
@@ -193,10 +206,4 @@ class GridModel(object):
         f.close()
         
 if __name__ == "__main__":
-    g = GridModel()
-    g.read("enemy_ships")
-    g.show()
-    g.finalize()
-    
-    print g.process_shot(0, 0)
-    assert g.process_shot(0, 0) == Ship.HIT
+    pass
