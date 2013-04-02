@@ -7,3 +7,6 @@ serv
 serv/*
 web
 web/*
+
+# ignore experimental Python file
+testing.py

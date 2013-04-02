@@ -1,16 +1,24 @@
 from ship_model import Ship
 from sys import stdout
+from collections import OrderedDict
+import json
 
 class GridModel(object):
     '''Model for one grid.
     
-    Here is how we will store stuff:
-    <ship_name> -> <ship_object>
-    
-    # below, all coords, not just root
-    <coord> -> <ship_name>
+    Below are data representations:
+        * _state_dict:
+            maps squares which have been fired upon to the result (SINK, HIT, SUNK)
+            HIT squares are updated to SUNK once the ship has been sunk
+            Used by opponent to query status
+        * _coords:
+            maps squares on which ships are placed to name of ship placed there
+        * _ships:
+            maps name of ship to Ship object (containing location info)
+            this is always up to date
     '''
     
+    # this is more-or-less static
     SIZE = 10
     
     def __init__(self):
@@ -22,10 +30,14 @@ class GridModel(object):
         self._ships = {}
         self._coords = {}
         self._finalized = False
-        self._state_dict = {}
+        self._state_dict = OrderedDict()
         
-    def finalize(self):
-        assert len(self._ships) == len(Ship.SHIPS)
+    def finalize(self, error_check=True):
+        '''Create data structures that are costly to create but useful for ship lookup during second half of game.
+        <code>error_check</code> determines whether to make sure the grid is correct. Usually on, off for debugging.'''
+    
+        if error_check:
+            assert len(self._ships) == len(Ship.SHIPS)
         
         for ship_name, s in self._ships.iteritems():
             for sq in s.get_covering_squares():
@@ -125,6 +137,7 @@ class GridModel(object):
 
         return all([self.is_valid_square(x, y) for x, y in s.get_covering_squares()]) and self._can_add_ship(s)
         
+    
     def can_add_ship(self, x, y, ship, vertical):
         '''Whether the given ship can be added to the grid.
         There are actually two use cases:
@@ -165,6 +178,22 @@ class GridModel(object):
         
         return len(self._ships) == 5
         
+    def read_json(self, obj):
+        '''Read configuration from JSON object.'''
+        
+        pass
+        
+    def get_ship_placement(self):
+        '''Return dictionary for the ship placement on this board.
+        Structure: {<ship_short_name> : [x, y, vertical (T/F)], ... }'''
+        
+        return {name: [ship._x, ship._y, ship.is_vertical()] for name, ship in self._ships.items()}
+        
+    def get_shots(self):
+        '''Return list of shots made on this grid.'''
+        
+        return self._state_dict.keys()
+    
     def read(self, fname):
         '''Load configuration from file.'''
         
@@ -176,27 +205,131 @@ class GridModel(object):
             r = self.add_ship(int(x), int(y), ship, v == "v")
             assert r # always have to load valid cofiguration
         f.close()
-        
+    
     def show(self):
+        '''Show the configuration that will be written to disk.'''
+    
         self._write(stdout)
-        
+    
     def _write(self, f):
+        '''Write the configuration of this model to the given open file.'''
+    
         for ship in self._ships.itervalues():
             line = "%s %d %d %s" % (ship.get_name(), ship._x, ship._y, ship._get_str_v()[0])
             f.write(line + "\n")
-        
+    
     def write(self, fname):
         '''Write configuration to file.'''
         
         f = open(fname, "w")
         self._write(f)
         f.close()
+            
+class GridAsciiDrawer(object):
+    '''Class to draw the grid in ASCII for command-line debugging.
+    Can display grid in different drawing modes.
+    
+    Here are drawing modes and their definitions:
+        * SHOW_PLACEMENT_ONLY: only show placement, do not show shots
+        * SHOW_ENEMY_STYLE: show hits and misses, also sunk ships
+        * SHOW_ALL: show hits and misses, as well as placed ships (sunk ships are hard to show)
+        
+    Here are characters and their definitions:
+        * HIDDEN_HIT_CHAR: character indicating ship on the square is hit
+        * HIDDEN_MISS_CHAR: character indicating a miss
+        * NULL_CHAR: character indicating square is empty (or has unknown value)
+        * SUNK_CHAR: character indicating ship on the square is sunk
+    '''
+    
+    # drawing modes:
+    SHOW_PLACEMENT_ONLY = 1
+    SHOW_ENEMY_STYLE = 2
+    SHOW_ALL = 3
+    
+    # different types of characters
+    HIDDEN_HIT_CHAR = 'x'
+    HIDDEN_MISS_CHAR = '\''
+    NULL_CHAR = '.'
+    SUNK_CHAR = '!'
+    
+    def get_hit_ship_char(self, ship, mode):
+        '''Return the character for the ship that is hit depending on the mode.'''
+        
+        return {
+            self.SHOW_PLACEMENT_ONLY : ship,
+            self.SHOW_ENEMY_STYLE : self.HIDDEN_HIT_CHAR,
+            self.SHOW_ALL : ship + self.HIDDEN_HIT_CHAR.upper()
+        } [mode]
+        
+    def get_sunk_ship_char(self, ship, mode):
+        '''Return the character for the ship that is sunk depending on the mode.'''
+        
+        return {
+            self.SHOW_PLACEMENT_ONLY : ship,
+            self.SHOW_ENEMY_STYLE : ship,
+            self.SHOW_ALL : ship + self.SUNK_CHAR.upper()
+        } [mode]
+        
+    def get_hidden_ship_char(self, ship, mode):
+        '''Return the character for the ship that is not hit depending on the mode.'''
+        
+        return {
+            self.SHOW_PLACEMENT_ONLY : ship,
+            self.SHOW_ENEMY_STYLE : self.NULL_CHAR,
+            self.SHOW_ALL : ship.ljust(2)
+        } [mode]
+        
+    def get_miss_ship_char(self,ship, mode):
+        '''Return the character for the square that was shot at (no ship there).
+        Ship is a parameter that will always be None (so this works with switch statement).'''
+        
+        return {
+            self.SHOW_PLACEMENT_ONLY : self.NULL_CHAR,
+            self.SHOW_ENEMY_STYLE : self.HIDDEN_MISS_CHAR,
+            self.SHOW_ALL : self.NULL_CHAR + self.HIDDEN_MISS_CHAR
+        } [mode]
+        
+    def get_empty_char(self, mode):
+        '''Return the character for the square with nothing in it.'''
+        
+        return {
+            self.SHOW_PLACEMENT_ONLY : self.NULL_CHAR,
+            self.SHOW_ENEMY_STYLE : self.NULL_CHAR,
+            self.SHOW_ALL : self.NULL_CHAR.ljust(2)
+        } [mode]
+        
+    def get_spacing_char(self, mode):
+        '''Return spacing based on the mode.'''
+        
+        return (" " if mode == self.SHOW_ALL else "")
+    
+    def draw(self, grid, mode=None):
+        '''Show ascii version of the grid. Used for command-line debugging.
+        Mode is the drawing mode (see top-level comments)
+        Default mode is SHOW_PLACEMENT_ONLY'''
+        
+        if mode is None:
+            mode = self.SHOW_PLACEMENT_ONLY
+        
+        for row in range(10):
+            for col in range(10):
+                sq = (col, row)
+                ship = grid._coords[sq] if sq in grid._coords else None
+                
+                if sq in grid._state_dict:
+                    c = {
+                        Ship.MISS : self.get_miss_ship_char,
+                        Ship.HIT : self.get_hit_ship_char,
+                        Ship.SUNK : self.get_sunk_ship_char
+                    } [grid._state_dict[sq]](ship, mode)
+                elif sq in grid._coords:
+                    c = self.get_hidden_ship_char(ship, mode)
+                else:
+                    c = self.get_empty_char(mode)
+                
+                stdout.write(c + self.get_spacing_char(mode))
+                
+            stdout.write("\n")
         
 if __name__ == "__main__":
-    g = GridModel()
-    g.read("enemy_ships")
-    g.show()
-    g.finalize()
-    
-    print g.process_shot(0, 0)
-    assert g.process_shot(0, 0) == Ship.HIT
+    pass
