@@ -33,7 +33,7 @@ class ShipPanel(Frame):
     ########### colors ############
     UNPLACED_COLOR = "black"
     PLACED_COLOR = "forest green"
-    SUNK_COLOR = "red"
+    SUNK_COLOR = "red" #<-- should be unused
     ###############################
 
     def __init__(self, master):
@@ -47,7 +47,7 @@ class ShipPanel(Frame):
         '''Create the UI for this panel.'''
         
         self._ship_var = IntVar()
-        self._ship_buttons = {}
+        self.ship_buttons = {}
         
         for i, ship in enumerate(Ship.SHORT_NAMES):
             b = Radiobutton(
@@ -64,7 +64,7 @@ class ShipPanel(Frame):
             b.ship_state = self.UNPLACED
             
             # save it
-            self._ship_buttons[ship] = b
+            self.ship_buttons[ship] = b
         
     def reset(self):    
         '''Return this panel to its starting state.'''
@@ -86,13 +86,13 @@ class ShipPanel(Frame):
     def click(self, ship):
         '''Click given button.'''
         
-        self._ship_buttons[ship].invoke()
+        self.ship_buttons[ship].invoke()
     
     def set_state(self, ship, state):
         '''Change the state of the given ship.'''
         
-        self._ship_buttons[ship].ship_state = state
-        self._ship_buttons[ship].config(foreground=self.get_state_color(state))
+        self.ship_buttons[ship].ship_state = state
+        self.ship_buttons[ship].config(foreground=self.get_state_color(state))
         
     def set_placed(self, ship):
         '''Set the ship as placed.'''
@@ -103,16 +103,6 @@ class ShipPanel(Frame):
         '''Set the ship as sunk.'''
         
         self.set_state(ship, self.SUNK)
-        
-    def bind_event(self, ship, function):
-        '''Bind the given ship type to a function.
-        When the ship is pressed, execute that function'''
-        #, with the ship as the argument.'''
-        
-        if ship is not None and ship in self._ship_buttons:
-            #f = lambda: function(ship)
-            self._ship_buttons[ship].config(command=function)
-        
         
     def unselect_ship(self):
         '''Unselect all ships.'''

@@ -53,6 +53,14 @@ class Ship(object):
         "minesweeper"
     ]
 
+    @staticmethod
+    def get_state_name(state):
+        '''Return the name of the given state.'''
+        
+        return {Ship.NULL : "NULL",
+                Ship.HIT : "HIT",
+                Ship.SUNK : "SUNK"} [state]
+
     def __init__(self, x=None, y=None, type=None, vertical=None):
         '''Create a new ship with the given parameters.
         Throw assertion error if incorrect ship type given.'''

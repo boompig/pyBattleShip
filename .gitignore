@@ -2,6 +2,13 @@
 ###################
 *.pyc
 
+# ignore vim swap files
+*.*.swp
+
+# ignore Aptana project files
+.project
+.pydevproject
+
 # ignore my experimental directories
 serv
 serv/*
@@ -10,3 +17,6 @@ web/*
 
 # ignore experimental Python file
 testing.py
+
+# ignore progress files that I make for myself
+TODO

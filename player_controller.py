@@ -3,10 +3,6 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-#################
-#    IMPORTS    #
-#################
-
 from Tkinter import *
 from ship_model import Ship, ShipLoader
 import time
@@ -15,26 +11,27 @@ from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
 from ship_panel import ShipPanel
 
-####################
-#    MAIN CLASS    #
-####################
+class PlayerController(object):
+    '''Controller for this player's grid.
+    Take care of all methods for the grid'''
+    
+    def __init__(self, f):
+        '''Create a new controller for the PlayerGridFrame in f.'''
+        
+        self._f = f
+        
+    def get_selected_placement_ship(self):
+        '''Return the ship selected to be placed.
+        Return the short name of the ship.'''
+        
+        return self._f.ship_panel.get_current_ship()
 
-class PlayerController(Frame):
+class PlayerGridFrame(Frame):
     '''The UI manager for all of the player's possible actions with their grid.
     '''
 
-    def __init__(self, master):#, staging_panel=None, ship_panel=None, grid=None):
+    def __init__(self, master):
         Frame.__init__(self, master)
-        
-        
-        #TODO refer to the staging panel here
-        #self._staging_panel = ShipPlacementPanel(self)#staging_panel
-        #self._ship_panel = ShipPanel(self)#ship_panel
-        #self._grid = ShipGrid(self, True)#grid
-        
-        #self._create_ui()
-        #self._bind_staging_events()
-        #self._bind_placing_events()
         
     def _create_ui(self):
         '''Add the items to the UI.'''
@@ -73,14 +70,6 @@ class PlayerController(Frame):
         
         return self._ship_panel.get_current_ship()
         
-    def play(self):
-        '''Prepare to play the game.'''
-        
-        # remove staging events
-        #self._ship_panel.unbind_all()
-        #self._ship_panel._move_ui()
-        pass
-        
     def add_staged_ship(self, x, y):
         '''Add the ship in the staging area to the grid.
         (x, y) refer to location on the grid where to add.
@@ -95,13 +84,3 @@ class PlayerController(Frame):
                     #TODO notify observers
                     #print "Everything is placed"
                     pass
-        
-    def shoot(self):
-        '''Shoot the opponent's grid at the current position of the mouse.'''
-        
-        pass
-        
-    def reset(self):
-        '''Reset the entire area in preparation for a new game.'''
-        
-        pass

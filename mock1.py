@@ -12,8 +12,9 @@ from ship_placement_panel import ShipPlacementPanel
 from ship_grid import ShipGrid
 from ship_war_panel import ShipWarPanel
 from ship_panel import ShipPanel
-from player_controller import PlayerController
+from player_controller import PlayerController, PlayerGridFrame
 import battleship
+from enemy_ship_panel import EnemyShipPanel
 
 class Game(Frame):
     '''Top-level Frame managing top-level events. Interact directly with user.'''
@@ -31,12 +32,7 @@ class Game(Frame):
     PLACING = 0
     PLAYING = 1
     GAME_OVER = 2
-    #####################################
-
-    ############ players ################
-    AI_PLAYER = 0
-    HUMAN_PLAYER = 1
-    #####################################
+    #####################################    
 
     ############ colors #################
     BACKGROUND_COLOR = "white"
@@ -59,38 +55,28 @@ class Game(Frame):
         self._create_ui()
         
         # these are 'controller' elements that should really be in another class
-        self.ai = ShipAI(self._their_grid._model, self._my_grid._model)
+        self.ai = ShipAI(self.their_grid._model, self.my_grid._model)
         self.reset()
         
-    def show_warning(self, msg):
+    def show_warning(self, msg, title=None):
         '''Show a warning msg that a certain action is illegal.
         Allows user to understand what's going on (i.e. why their action failed.
         '''
         
-        self.warning_frame = Frame(
-            self, 
-            background=self.WARNING_BACKGROUND, 
-            width=self.winfo_width(), 
-            height=self.WARNING_BAR_HEIGHT
-        )
-        self.warning_frame.place(x=0, y=self.winfo_height() - self.WARNING_BAR_HEIGHT)
+        title = ("Warning" if title is None else title)
         
-        l = Label(self.warning_frame, text=msg, background=self.WARNING_BACKGROUND)
-        l.grid(row=0, column=0, sticky=W)
-        
-        b = Button(self.warning_frame, text="x", command=self.warning_frame.destroy)
-        b.grid(row=0, column=1, sticky=E)
+        self._show_popup(title, msg)
         
     def _create_ui(self):
         '''Create all UI elements for the game.'''
         
         self._create_menu()
         self._add_grids()
-        self._add_staging_panel()
-        self._add_ship_panels()
+        self._addstaging_panel()
+        self._addship_panels()
         self._make_buttons()
         
-        self.config(height=self.Y_PADDING * 3 + self._my_grid.size + self.BUTTON_PANEL_HEIGHT + self.WARNING_BAR_HEIGHT)
+        self.config(height=self.Y_PADDING * 3 + self.my_grid.size + self.BUTTON_PANEL_HEIGHT + self.WARNING_BAR_HEIGHT)
         self.set_all_bgs(self.BACKGROUND_COLOR, self)
         
     def _show_popup(self, title, text):
@@ -163,6 +149,9 @@ class Game(Frame):
             self.dev_menu.add_command(label="Auto Place")
             self.menus["dev_auto_place"] = count
             count += 1
+            self.dev_menu.add_command(label="Random Shot")
+            self.menus["dev_random_shot"] = count
+            count += 1
             menubar.add_cascade(label="Dev", menu=self.dev_menu)
         
         help_menu = Menu(menubar, tearoff=0)
@@ -172,12 +161,12 @@ class Game(Frame):
         
         self.master.config(menu=menubar)
 
-    def _add_staging_panel(self):
+    def _addstaging_panel(self):
         '''Create the placement/ship staging panel.'''
     
-        self._my_grid_frame._staging_panel = ShipPlacementPanel(self)
-        self._my_grid_frame._staging_panel.place(
-            x=self.X_PADDING * 2 + self.SHIP_PANEL_WIDTH + self._my_grid.size,
+        self.my_grid_frame.staging_panel = ShipPlacementPanel(self)
+        self.my_grid_frame.staging_panel.place(
+            x=self.X_PADDING * 2 + self.SHIP_PANEL_WIDTH + self.my_grid.size,
             y=self.Y_PADDING
         )
             
@@ -189,44 +178,33 @@ class Game(Frame):
         for child in parent.winfo_children():
             self.set_all_bgs(color, child)
         
-    def _add_ship_panels(self):
+    def _addship_panels(self):
         '''Add a list of ships to select from, for adding.
         Note that staging area must be added FIRST'''
         
         ############################## ShipPanel ########################
-        self._my_grid_frame._ship_panel = ShipPanel(self)
-        self._my_grid_frame._ship_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 4)
+        self.my_grid_frame.ship_panel = ShipPanel(self)
+        self.my_grid_frame.ship_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 4)
         
-        for ship in Ship.SHORT_NAMES:
-            self._my_grid_frame._ship_panel._ship_buttons[ship].config(command=self._stage_current_ship)
-            
         self.unselect_ship()
         ##################################################################
         
         ###################### ShipWarPanel ##############################
-        self._my_grid_frame._ship_war_panel = ShipWarPanel(self)
-        self._my_grid_frame._ship_war_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 2)
+        self.my_grid_frame._ship_war_panel = ShipWarPanel(self)
+        self.my_grid_frame._ship_war_panel.config(height=self.my_grid_frame.winfo_height())
+        self.my_grid_frame._ship_war_panel.place(x=self.X_PADDING, y=self.Y_PADDING * 2)
         ##################################################################
         
-        ###################### ShipWarPanel for Adversary ################
-        self._their_grid_frame._ship_panel = ShipPanel(self)
-        self._their_grid_frame._ship_panel.place(x=self._my_grid.size * 2 + self.X_PADDING * 3 + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING * 4)
+        ###################### EnemyShipPanel ############################
+        self.their_grid_frame.ship_panel = EnemyShipPanel(self)
+        self.their_grid_frame.ship_panel.place(x=self.my_grid.size * 2 + self.X_PADDING * 3 + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING * 4)
         ##################################################################
             
     def unselect_ship(self):
         '''Deselect all ships in the placement and staging GUIs.'''
     
-        self._my_grid_frame._ship_panel._ship_var.set(10)
-        self._my_grid_frame._staging_panel.reset()
-        
-    def _stage_current_ship(self):
-        '''Stage the currently selected ship.'''
-        
-        if self.get_current_ship() is not None:
-            # the x and y coordinates don't matter in this case
-            # stage the ship vertically by default
-            s = Ship(0, 0, self.get_current_ship(), True)
-            self._my_grid_frame._staging_panel.add_ship(s)
+        self.my_grid_frame.ship_panel._ship_var.set(10)
+        self.my_grid_frame.staging_panel.reset()
         
     def _hide_frame(self, frame):
         '''Since you can't hide a frame per se, 'unpack' the frame's child widgets.
@@ -237,30 +215,30 @@ class Game(Frame):
         for child in frame.winfo_children():
             child.pack_forget()
             
-    def show_game_over_popup(self):
+    def show_game_over_popup(self, winner):
         '''Show a popup with a dialog saying the game is over, and showing the winning player.'''
         
         msg = {
-            self.HUMAN_PLAYER : self.GAME_OVER_WIN_MSG,
-            self.AI_PLAYER : self.GAME_OVER_LOSE_MSG
-        } [self._winner]
+            battleship.GameController. HUMAN_PLAYER : self.GAME_OVER_WIN_MSG,
+            battleship.GameController.AI_PLAYER : self.GAME_OVER_LOSE_MSG
+        } [winner]
             
         self._show_popup(self.GAME_OVER_POPUP_TITLE, msg)
         
     def process_placing_state(self):
         '''Basic stuff to do during placing state.'''
         
-        self.config(width=self.X_PADDING * 3 + self._my_grid.size + self.SHIP_PANEL_WIDTH + self._my_grid_frame._staging_panel.CANVAS_WIDTH)
+        self.config(width=self.X_PADDING * 3 + self.my_grid.size + self.SHIP_PANEL_WIDTH + self.my_grid_frame.staging_panel.CANVAS_WIDTH)
         
         # show staging panel
-        self._my_grid_frame._staging_panel.pack_ui()
-        self._my_grid_frame._staging_panel.lift(aboveThis=self._their_grid_frame)
+        self.my_grid_frame.staging_panel.pack_ui()
+        self.my_grid_frame.staging_panel.lift(aboveThis=self.their_grid_frame)
     
         self.play_game_button.config(state=DISABLED)
-        self._hide_frame(self._their_grid_frame)
+        self._hide_frame(self.their_grid_frame)
         
-        self._hide_frame(self._my_grid_frame._ship_war_panel)
-        self._my_grid_frame._ship_panel.lift(aboveThis=self._my_grid_frame._ship_war_panel)
+        self._hide_frame(self.my_grid_frame._ship_war_panel)
+        self.my_grid_frame.ship_panel.lift(aboveThis=self.my_grid_frame._ship_war_panel)
         
         # allow the AI to place ships
         self.ai.place_ships()
@@ -268,34 +246,31 @@ class Game(Frame):
     def process_playing_state(self):
         '''Basic stuff to do during playing state.'''
         
-        self.config(width=self.X_PADDING * 4 + self._my_grid.size * 2 + self.SHIP_PANEL_WIDTH * 3)
-        self._my_grid._model.finalize()
-        self._their_grid._model.finalize()
-        self._hide_frame(self._my_grid_frame._staging_panel)
+        self.config(width=self.X_PADDING * 4 + self.my_grid.size * 2 + self.SHIP_PANEL_WIDTH * 3)
+        self.my_grid._model.finalize()
+        self.their_grid._model.finalize()
+        self._hide_frame(self.my_grid_frame.staging_panel)
         
-        self._their_grid.config(state=NORMAL)
-        self._their_grid.enable()
-        
-        for ship in Ship.SHORT_NAMES:
-            self._their_grid_frame._ship_panel.set_placed(ship)
+        self.their_grid.config(state=NORMAL)
+        self.their_grid.enable()
         
         self.play_game_button.config(state=DISABLED)
         
         self.unselect_ship()
         
-        self._my_grid_frame._ship_war_panel.pack_ui()
-        self._my_grid_frame._ship_war_panel.lift(aboveThis=self._my_grid_frame._ship_panel)
+        self.my_grid_frame._ship_war_panel.pack_ui()
+        self.my_grid_frame._ship_war_panel.lift(aboveThis=self.my_grid_frame.ship_panel)
         
         # show opponent's grid
-        self._their_grid_frame.lift(aboveThis=self._my_grid_frame._staging_panel)
-        self._their_grid_label.pack()
-        self._their_grid.pack(side=LEFT, pady=20)
+        self.their_grid_frame.lift(aboveThis=self.my_grid_frame.staging_panel)
+        self.their_grid_label.pack()
+        self.their_grid.pack(side=LEFT, pady=20)
         
     def process_game_over_state(self):
-        # disable everything except for the reset button
-        self._their_grid.disable()
+        '''Change the view to reflect the game is over.'''
+        
+        self.their_grid.disable()
         self.master.title(self.WINDOW_TITLE_GAME_OVER)
-        self.show_game_over_popup()
         
     def process_state(self):
         '''Simple state controller to enable and disable certain widgets depending on the state.'''
@@ -306,100 +281,29 @@ class Game(Frame):
             self.process_playing_state()
         elif self._state == self.GAME_OVER:
             self.process_game_over_state()
-            
-    def get_winning_player(self):
-        '''Return textual representation of winning player.'''
-        
-        return {
-            self.HUMAN_PLAYER: "human",
-            self.AI_PLAYER : "ai"
-        } [self._winner]
-        
-    def _process_ai_shot(self):
-        '''Get the shot from the AI.
-        Process the given shot by the AI.
-        Return the result of the shot'''
-    
-        shot = self.ai.get_shot()
-        tag_id = self._my_grid._get_tile_name(*shot)
-        id = self._my_grid.find_withtag(tag_id)[0]
-        result = self._my_grid.process_shot(id)
-        
-        if result == Ship.HIT or result == Ship.SUNK:
-            self._set_ship_hit(self._my_grid._model.get_ship_at(*shot))
-            
-        if result == Ship.SUNK:
-            self._set_ship_sunk(self._my_grid._model.get_sunk_ship(*shot).get_short_name())
-        
-            if self._my_grid._model.all_sunk():
-                self._winner = self.AI_PLAYER
                 
-        # update the AI with the shot's result
-        self.ai.set_shot_result(result)
-                
-        return result
-        
-    def _process_human_shot(self, id):
-        '''Given the shot from the human player, react to it.
-        Return the result.'''
-        
-        result = self._their_grid.process_shot(id)
-        # disable square regardless of result
-        self._their_grid.itemconfig(id, state=DISABLED)
-        shot = self._their_grid._tiles[id]
-        
-        if result == Ship.SUNK:
-            ship = self._their_grid._model.get_sunk_ship(*shot)
-            self._their_grid_frame._ship_panel.set_sunk(ship.get_short_name())
-        
-            if self._their_grid._model.all_sunk():
-                self._winner = self.HUMAN_PLAYER
-                
-        return result
-            
-    def _shot(self, event):
-        '''Process a shooting event.
-        event should be the Tkinter event triggered by tag_bind
-        This is a callback function.'''
-    
-        id = self._their_grid.find_withtag(CURRENT)[0]
-        result = self._process_human_shot(id)
-        
-        if result == Ship.MISS:
-            # disable opponent's grid during their turn
-            result = Ship.NULL
-            self._their_grid.disable()
-            while result != Ship.MISS and self._winner is None:
-                result = self._process_ai_shot()
-                
-            # re-enable their grid
-            self._their_grid.enable()
-        
-        if self._winner is not None:
-            self._state = self.GAME_OVER
-            self.process_state()
-            
     def _add_grid_events(self):
         '''Add events to the grids.'''
         
-        self._their_grid.tag_bind("tile", "<Button-1>", self._shot)
+        #self.their_grid.tag_bind("tile", "<Button-1>", self._shot)
+        pass
             
     def _add_grids(self):
         '''Create UI containers for the player grids.'''
     
-        self._my_grid_frame = PlayerController(self)
-        self._my_grid_frame.place(x=self.X_PADDING + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING)
-        l1 = Label(self._my_grid_frame, text="Your Grid")
+        self.my_grid_frame = PlayerGridFrame(self)
+        self.my_grid_frame.place(x=self.X_PADDING + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING)
+        l1 = Label(self.my_grid_frame, text="Your Grid")
         l1.pack()
-        self._my_grid = ShipGrid(self._my_grid_frame, True)
-        self._my_grid.pack(side=LEFT, pady=20)
+        self.my_grid = ShipGrid(self.my_grid_frame, True)
+        self.my_grid.pack(side=LEFT, pady=20)
         
-        self._their_grid_frame = PlayerController(self)
-        self._their_grid_frame.place(x=self._my_grid.size + self.X_PADDING * 2 + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING)
-        self._their_grid_label = Label(self._their_grid_frame, text="Opponent's Grid")
-        self._their_grid_label.pack()
-        self._their_grid = ShipGrid(self._their_grid_frame, False)
-        self._their_grid.pack(side=LEFT, pady=20)
+        self.their_grid_frame = PlayerGridFrame(self)
+        self.their_grid_frame.place(x=self.my_grid.size + self.X_PADDING * 2 + self.SHIP_PANEL_WIDTH, y=self.Y_PADDING)
+        self.their_grid_label = Label(self.their_grid_frame, text="Opponent's Grid")
+        self.their_grid_label.pack()
+        self.their_grid = ShipGrid(self.their_grid_frame, False)
+        self.their_grid.pack(side=LEFT, pady=20)
         
         self._add_grid_events()
         
@@ -412,14 +316,14 @@ class Game(Frame):
         self.unselect_ship()
         
         # reset staging area
-        self._my_grid_frame._staging_panel.reset()
+        self.my_grid_frame.staging_panel.reset()
         
         # reset indicators on ships in panels
-        self._my_grid_frame._ship_war_panel.reset()
-        for ship, button in self._my_grid_frame._ship_panel._ship_buttons.iteritems():
+        self.my_grid_frame._ship_war_panel.reset()
+        for ship, button in self.my_grid_frame.ship_panel.ship_buttons.iteritems():
             button.config(foreground="black")
         
-        for x, y in self._my_grid.get_tiles():
+        for x, y in self.my_grid.get_tiles():
             self.reset_closure(x, y)
             
         self._state = self.PLACING
@@ -429,60 +333,55 @@ class Game(Frame):
         '''Add a placement event to the given tile.
         TODO this is badly named'''
     
-        tag_id = self._my_grid._get_tile_name(x, y)
+        tag_id = self.my_grid._get_tile_name(x, y)
         c = self.get_add_ship_callback()
         f = lambda event: self.add_staged_ship(x, y, c)
-        self._my_grid.tag_bind(tag_id, "<Button-1>", f)
+        self.my_grid.tag_bind(tag_id, "<Button-1>", f)
         
     def add_staged_ship(self, x, y, callback):
         '''Take the stage from the staging area, and place it on the board at position (x, y).
         After ship has been placed, execute the function <callback>.'''
     
-        s = self._my_grid_frame._staging_panel.get_staged_ship()
+        s = self.my_grid_frame.staging_panel.get_staged_ship()
         
         if s is not None:
-            self._my_grid.add_ship(x, y, s.get_short_name(), s.is_vertical(), callback)
+            self.my_grid.add_ship(x, y, s.get_short_name(), s.is_vertical(), callback)
         
     def get_add_ship_callback(self):
         '''Return the callback function for adding a ship.'''
     
-        return lambda: self.ship_set(self.get_current_ship())
+        return lambda: self.ship_set(self.my_grid_frame.ship_panel.get_current_ship())
         
     def _set_ship_sunk(self, ship):
         '''This is a callback, to be called when a ship has been sunk.
         TODO for now only called when one of MY ships is sunk.
         UI shows that the given ship has been sunk.'''
         
-        self._my_grid_frame._ship_panel.set_sunk(ship)
+        self.my_grid_frame.ship_panel.set_sunk(ship)
         
     def _set_ship_hit(self, ship):
         '''This is a callback, to be called when a ship has been hit.
         TODO for now only called when one of MY ships is hit.
         UI shows that the given ship has been hit.'''
         
-        self._my_grid_frame._ship_war_panel.update(ship)
+        self.my_grid_frame._ship_war_panel.update(ship)
         
     def ship_set(self, ship):
         '''This is a callback, to be called when a ship has been placed.
         UI shows that the given ship has been placed.'''
     
         self._set_ships[ship] = True
-        self._my_grid_frame._ship_panel.set_placed(ship)
+        self.my_grid_frame.ship_panel.set_placed(ship)
         
         if all(self._set_ships.values()):
             self.play_game_button.config(state=NORMAL)
         
-    def get_current_ship(self):
-        '''Return the current ship.'''
-        
-        return self._my_grid_frame._ship_panel.get_current_ship()
-        
     def _make_buttons(self):
         '''Create action buttons at the bottom.'''
     
-        button_row = self._my_grid.size + self.Y_PADDING + (self.BUTTON_PANEL_HEIGHT - 2 * self.BUTTON_PADDING)
+        button_row = self.my_grid.size + self.Y_PADDING + (self.BUTTON_PANEL_HEIGHT - 2 * self.BUTTON_PADDING)
         button_frame = Frame(self)
-        button_frame.place(x=self._my_grid.size - self.X_PADDING, y=button_row)
+        button_frame.place(x=self.my_grid.size - self.X_PADDING, y=button_row)
         
         self.play_game_button = Button(button_frame, text="Play")
         self.play_game_button.pack(side=LEFT, padx=self.BUTTON_PADDING, pady=self.BUTTON_PADDING)
