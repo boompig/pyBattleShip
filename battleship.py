@@ -1,11 +1,13 @@
 from Tkinter import *
+import time
+import random
+import json
+
 from ship_model import Ship, ShipLoader
 from grid_model import GridModel
 from ship_ai import ShipAI
 import mock1
 from player_controller import PlayerController
-import time
-import random
 
 class GameController(object):
     '''
@@ -56,11 +58,6 @@ class GameController(object):
         # run the game
         app.mainloop()
         
-    def _hi(self, event=None):
-        '''Small and convenient debugging method.'''
-    
-        print "hi"
-        
     def exit_callback(self, event=None):
         '''Quit the game by closing the parent window.'''
         
@@ -108,6 +105,14 @@ class GameController(object):
         if GameController.DEV_FLAG:
             self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_auto_place"], command=self.autoplace_ships_callback)
             self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_random_shot"], command=self.random_shot_callback)
+    
+    def read_game_state(self, fname):
+        '''Read game state from the given file. fname is the file name.'''
+        
+        fp = open(fname, "r")
+        fp.close()
+        
+        pass
     
     def autoplace_ships_callback(self, event=None):
         '''Respond to the `dev` event of auto-placing all the ships.
