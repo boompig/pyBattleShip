@@ -1,0 +1,64 @@
+{
+    "battleship": {
+        "human": {
+            "ships": {
+                "a": [
+                    0,
+                    0,
+                    true
+                ],
+                "s": [
+                    3,
+                    5,
+                    false
+                ],
+                "b": [
+                    8,
+                    3,
+                    true
+                ],
+                "m": [
+                    2,
+                    7,
+                    false
+                ],
+                "d": [
+                    1,
+                    6,
+                    false
+                ]
+            },
+            "shots": []
+        },
+        "ai": {
+            "ships": {
+                "a": [
+                    9,
+                    0,
+                    true
+                ],
+                "s": [
+                    1,
+                    0,
+                    false
+                ],
+                "b": [
+                    0,
+                    9,
+                    false
+                ],
+                "m": [
+                    8,
+                    9,
+                    false
+                ],
+                "d": [
+                    0,
+                    0,
+                    true
+                ]
+            },
+            "shots": []
+        }
+    }
+}

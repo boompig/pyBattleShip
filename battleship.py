@@ -1,7 +1,11 @@
+import tkFileDialog
 from Tkinter import *
+from collections import OrderedDict
+import uuid
 import time
 import random
 import json
+import os
 
 from ship_model import Ship, ShipLoader
 from grid_model import GridModel
@@ -33,10 +37,27 @@ class GameController(object):
     HUMAN_PLAYER = 1
     #####################################
 
+    ############ JSON/saving ############
+    PLAYERS = ["human", "ai"]
+    SAVE_DIR = "saves"
+    AUTOSAVE_DIR = os.path.join("saves", "autosaves")
+    DEFAULT_SAVE_FILE = "battleship.json"
+    #####################################
+
+    def _set_cwd(self):
+        '''Set correct working directory. Done for compatibility with gVim on Windows, and running this from outside the base directory.'''
+
+        p = os.path.realpath(__file__)
+        head, tail = os.path.split(p)
+        if head != os.getcwd():
+            os.chdir(head)
+
     def __init__(self): 
         '''Create a main controller for the game.
         Create the GUI. Run the game.'''
         
+        self._set_cwd()
+
         # create the UI
         app = Tk()
     
@@ -69,16 +90,105 @@ class GameController(object):
         d = {
             "P" : self.autoplace_ships_callback,
             "<space>" : self.play_callback,
-            "X" : self.exit_callback,
+            "<Control-w>" : self.exit_callback, #typical functionality
             "N" : self.new_game_callback,
             "?" : lambda event: self.game_frame.show_keyboard_shortcuts(),
-            "F" : self.random_shot_callback
+            "F" : self.random_shot_callback,
+            "<Control-s>" : self.save_callback,
+            "<Control-o>" : self.load_callback
         }
+
+        # enable special controls for dev to fast-navigate the app
+        if GameController.DEV_FLAG:
+            d["X"] = self.exit_callback
         
         for key_binding, fn in d.iteritems():
-            print "{} <-- {}".format(key_binding, fn.__name__)
             self.game_frame.master.bind(key_binding, fn) # has to be master
+            if GameController.DEV_FLAG:
+                print "{} <-- {}".format(key_binding, fn.__name__)
         
+    def save_callback(self, event=None, fname=None, compact=False):
+        '''Write the game configuration to a JSON file.
+        Cannot save the game before both AI and human player have placed ships.
+        fname is the file name
+        compact is boolean indicating whether to represent the JSON compactly or not. Should be True unless debugging.'''
+
+        if fname is None:
+            fname = tkFileDialog.asksaveasfilename(defaultextension="json", 
+                    initialdir=os.path.join(os.getcwd(), self.SAVE_DIR),
+                    filetypes=[("Battleship Games", "*.json")])
+            #error-check user input
+            assert not isinstance(fname, list) and len(fname) > 0
+
+        grids = [self.game_frame.my_grid._model, self.game_frame.their_grid._model]
+        # basic error checking - this method is meaningless for grids with unplaced ships
+        assert all([g.has_all_ships() for g in grids])
+        obj = OrderedDict()
+        
+        # write ship placement
+        for grid, player in zip(grids, GameController.PLAYERS):
+            obj[player] = {}
+            obj[player]["ships"] = grid.get_ship_placement()
+            obj[player]["shots"] = grid.get_shots()
+        
+        main_obj = {"battleship" : obj} # bind all data to a root element
+        fp = open(fname, "w")
+        if compact:
+            json.dump(main_obj, fp, separators=(',', ':'))
+        else:
+            json.dump(main_obj, fp, indent=4, separators=(',', ': '))
+        fp.close()
+
+    def autosave_callback(self, event=None):
+        '''Auto-save the state of the game in some file. Do this occassionally.'''
+
+        self.save_callback(event, os.path.join(GameController.AUTOSAVE_DIR, str(uuid.uuid4()) + ".json"), compact=True)
+
+    def load_callback(self, event=None, fname=None):
+        '''Read the JSON game configuration from file called <code>fname</code>.
+        Return a dictionary representing the parsed JSON. All the strings are unicode.
+        
+        error_check should be True, turn to False to disable strict error checking for debugging.
+        
+        May raise KeyError if JSON is not in the expected format (see battleship.json for example).
+        May raise ValueError if fails to parse file
+        May raise IOError if fails to find file'''
+
+        if fname is None:
+            fname = tkFileDialog.askopenfilename(defaultextension="json", 
+                    initialdir=os.path.join(os.getcwd(), self.SAVE_DIR),
+                    filetypes=[("Battleship Games", "*.json")])
+            #error-check user input
+            assert not isinstance(fname, list) and len(fname) > 0
+
+        fp = open(os.path.join(GameController.SAVE_DIR, fname), "r")
+        obj = json.load(fp)["battleship"] # do this so we don't have to reference ["battleship"] every time
+        fp.close()
+
+        #TODO just for now, to see if it works
+        print obj
+        return
+        
+        grids = [GridModel(), GridModel()]
+        
+        # placing ships
+        for grid, player in zip(grids, PLAYERS):
+            for ship_name, coords in obj[player]["ships"].iteritems():
+                s = Ship(type=str(ship_name),  x=coords[0], y=coords[1], vertical=coords[2])
+                success = grid.add(s)
+                
+                if error_check:
+                    assert success
+            
+            grid.finalize(error_check=False)
+            
+        # firing shots
+        for grid, player in zip(grids, PLAYERS):
+            for shot in obj[player]["shots"]:
+                grid.process_shot(*shot)
+                
+        return grids
+
     def warn_hi(self):
         self.game_frame.show_warning("hi")
         
@@ -144,6 +254,7 @@ class GameController(object):
             #   update view
             self.game_frame._state = self.game_frame.PLAYING
             self.game_frame.process_state()
+            self.autosave_callback()
             # TODO update model <<< FINALIZE should probably be here
         else:
             self.game_frame.show_warning("Cannot start the game: you have not placed all your ships.")
