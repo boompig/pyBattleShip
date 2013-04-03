@@ -67,7 +67,7 @@ class ShipPlacementPanel(Frame):
         self._staged_ship = None
         self._clear_staging_grid()
         self._ship_name.set("")
-        self._rb.config(state=DISABLED)
+        self._disable_rotate_button()
         
     def _clear_staging_grid(self):
         '''Remove previously staged ships from staging grid.'''
@@ -105,6 +105,16 @@ class ShipPlacementPanel(Frame):
         
         self.stage_ship(s)
         
+    def _disable_rotate_button(self):
+        '''Disable / hide the rotate button.'''
+        
+        self._rb.grid_forget()
+        
+    def _enable_rotate_button(self):
+        '''Enable / show the rotate button.'''
+        
+        self._rb.grid(row=3)
+        
     def stage_ship(self, s):
         '''Add a ship to the staging area. 
         Display what it would look like on the grid.
@@ -115,9 +125,9 @@ class ShipPlacementPanel(Frame):
             self._ship_name.set(s.get_full_name().title())
             self._draw_staged_ship()
             
-            self._rb.config(state=NORMAL)
+            self._enable_rotate_button()
         else:
-            self._rb.config(state=DISABLED)
+            self._disable_rotate_button()
         
     def _draw_ship_tile(self, x, y):
         '''Draw a single tile for the ship at given coordinates.'''

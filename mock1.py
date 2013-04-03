@@ -72,7 +72,7 @@ class Game(Frame):
         
         self._create_menu()
         self._add_grids()
-        self._addstaging_panel()
+        self._add_staging_panel()
         self._addship_panels()
         self._make_buttons()
         
@@ -161,7 +161,7 @@ class Game(Frame):
         
         self.master.config(menu=menubar)
 
-    def _addstaging_panel(self):
+    def _add_staging_panel(self):
         '''Create the placement/ship staging panel.'''
     
         self.my_grid_frame.staging_panel = ShipPlacementPanel(self)
@@ -233,6 +233,7 @@ class Game(Frame):
         # show staging panel
         self.my_grid_frame.staging_panel.pack_ui()
         self.my_grid_frame.staging_panel.lift(aboveThis=self.their_grid_frame)
+        self.my_grid_frame.staging_panel.reset()
     
         #re-pack
         self.play_game_button.pack(side=LEFT, padx=self.BUTTON_PADDING, pady=self.BUTTON_PADDING)
