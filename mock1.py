@@ -234,6 +234,8 @@ class Game(Frame):
         self.my_grid_frame.staging_panel.pack_ui()
         self.my_grid_frame.staging_panel.lift(aboveThis=self.their_grid_frame)
     
+        #re-pack
+        self.play_game_button.pack(side=LEFT, padx=self.BUTTON_PADDING, pady=self.BUTTON_PADDING)
         self.play_game_button.config(state=DISABLED)
         self._hide_frame(self.their_grid_frame)
         
@@ -246,7 +248,7 @@ class Game(Frame):
     def process_playing_state(self):
         '''Basic stuff to do during playing state.'''
         
-        self.config(width=self.X_PADDING * 4 + self.my_grid.size * 2 + self.SHIP_PANEL_WIDTH * 3)
+        self.config(width=self.X_PADDING * 4 + self.my_grid.size * 2 + self.SHIP_PANEL_WIDTH * 2)
         self.my_grid._model.finalize()
         self.their_grid._model.finalize()
         self._hide_frame(self.my_grid_frame.staging_panel)
@@ -254,7 +256,8 @@ class Game(Frame):
         self.their_grid.config(state=NORMAL)
         self.their_grid.enable()
         
-        self.play_game_button.config(state=DISABLED)
+        # hide while playing
+        self.play_game_button.pack_forget()
         
         self.unselect_ship()
         

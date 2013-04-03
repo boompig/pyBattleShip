@@ -20,3 +20,6 @@ testing.py
 
 # ignore progress files that I make for myself
 TODO
+
+# for now, ignore autosaves
+saves/autosaves/*.json
