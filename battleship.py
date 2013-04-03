@@ -40,8 +40,13 @@ class GameController(object):
     ############ JSON/saving ############
     PLAYERS = ["human", "ai"]
     SAVE_DIR = "saves"
-    AUTOSAVE_DIR = os.path.join("saves", "autosaves")
+    AUTOSAVE_DIR = os.path.join(SAVE_DIR, "autosaves")
     DEFAULT_SAVE_FILE = "battleship.json"
+    #####################################
+    
+    ########## Key Game Files ###########
+    CONF_DIR = "config"
+    ID_FILE = "game_id.txt"
     #####################################
 
     def _set_cwd(self):
@@ -51,12 +56,38 @@ class GameController(object):
         head, tail = os.path.split(p)
         if head != os.getcwd():
             os.chdir(head)
+            
+    def _game_files_setup(self):
+        '''Create initial game files, if not already present.
+        Keep them up to date.'''
+        
+        if not os.path.exists(GameController.CONF_DIR):
+            os.makedirs(GameController.CONF_DIR)
+        fname = os.path.join(GameController.CONF_DIR, GameController.ID_FILE)
+        if not os.path.exists(fname):
+            fp = open(fname, "w")
+            fp.close()
+    
+    def _create_game_id(self):
+        '''Create a unique game ID for this game. Update relevant file.'''
+        
+        fname = os.path.join(GameController.CONF_DIR, GameController.ID_FILE)
+        fp = open(fname, "r")
+        self._game_id = int("0" + fp.read().strip()) + 1 # leading 0 makes game_id = 0 when file is empty
+        fp.close()
+        
+        fp = open(fname, "w")
+        fp.write(str(self._game_id))
+        fp.close()
 
     def __init__(self): 
         '''Create a main controller for the game.
         Create the GUI. Run the game.'''
         
         self._set_cwd()
+        self._game_files_setup()
+        self._create_game_id()
+        print "Game ID: %d" % self._game_id
 
         # create the UI
         app = Tk()
@@ -124,6 +155,7 @@ class GameController(object):
         # basic error checking - this method is meaningless for grids with unplaced ships
         assert all([g.has_all_ships() for g in grids])
         obj = OrderedDict()
+        obj["game_id"] = self._game_id
         
         # write ship placement
         for grid, player in zip(grids, GameController.PLAYERS):
