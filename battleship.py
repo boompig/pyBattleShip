@@ -1,4 +1,10 @@
+'''
+Written by Daniel Kats
+April 3, 2013
+''' 
+
 import tkFileDialog
+import tkMessageBox
 from Tkinter import *
 from collections import OrderedDict
 import uuid
@@ -189,46 +195,54 @@ class GameController(object):
         '''Read the JSON game configuration from file called <code>fname</code>.
         Return a dictionary representing the parsed JSON. All the strings are Unicode.
         
-        error_check should be True, turn to False to disable strict error checking for debugging.
-        
         May raise KeyError if JSON is not in the expected format (see battleship.json for example).
         May raise ValueError if fails to parse file
         May raise IOError if fails to find file'''
 
-        if fname is None:
+        while fname is None or isinstance(fname, list):
             fname = tkFileDialog.askopenfilename(defaultextension="json", 
                     initialdir=os.path.join(os.getcwd(), self.SAVE_DIR),
                     filetypes=[("Battleship Games", "*.json")])
-            #error-check user input
-            assert not isinstance(fname, list) and len(fname) > 0
+            if isinstance(fname, list):
+                    self.game_frame.show_warning("Select one file only")
 
         fp = open(os.path.join(GameController.SAVE_DIR, fname), "r")
         obj = json.load(fp)["battleship"] # do this so we don't have to reference ["battleship"] every time
         fp.close()
+        
+        if tkMessageBox.askyesno(
+           "Load Game", 
+           "Loading another game will cause you to lose all unsaved progress. Continue?"):
 
-        #TODO just for now, to see if it works
-        print obj
-        return
+            self.new_game_callback()
+            #TODO just for now, to see if it works
+            print obj
+            return
         
-        grids = [GridModel(), GridModel()]
-        
-        # placing ships
-        for grid, player in zip(grids, PLAYERS):
-            for ship_name, coords in obj[player]["ships"].iteritems():
-                s = Ship(type=str(ship_name),  x=coords[0], y=coords[1], vertical=coords[2])
-                success = grid.add(s)
-                
-                if error_check:
-                    assert success
+            # load the models
             
-            grid.finalize(error_check=False)
+            #TODO models go here
+            grids = [GridModel(), GridModel()]
             
-        # firing shots
-        for grid, player in zip(grids, PLAYERS):
-            for shot in obj[player]["shots"]:
-                grid.process_shot(*shot)
+            # placing ships
+            for grid, player in zip(grids, GameController.PLAYERS):
+                for ship_name, coords in obj[player]["ships"].iteritems():
+                    s = Ship(type=str(ship_name),  x=coords[0], y=coords[1], vertical=coords[2])
+                    success = grid.add(s)
+                    
+                    if error_check:
+                        assert success
                 
-        return grids
+                grid.finalize(error_check=False)
+                
+            # firing shots
+            for grid, player in zip(grids, PLAYERS):
+                for shot in obj[player]["shots"]:
+                    grid.process_shot(*shot)
+                    
+            
+                    
+            return grids
 
     def warn_hi(self):
         self.game_frame.show_warning("hi")

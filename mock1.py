@@ -4,8 +4,10 @@ March 4, 2013
 '''
 
 from Tkinter import *
-from ship_model import Ship, ShipLoader
+import tkMessageBox
 import time
+
+from ship_model import Ship, ShipLoader
 from grid_model import GridModel
 from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
@@ -63,9 +65,7 @@ class Game(Frame):
         Allows user to understand what's going on (i.e. why their action failed.
         '''
         
-        title = ("Warning" if title is None else title)
-        
-        self._show_popup(title, msg)
+        tkMessageBox.showwarning(title, msg)
         
     def _create_ui(self):
         '''Create all UI elements for the game.'''
@@ -78,27 +78,6 @@ class Game(Frame):
         
         self.config(height=self.Y_PADDING * 3 + self.my_grid.size + self.BUTTON_PANEL_HEIGHT + self.WARNING_BAR_HEIGHT)
         self.set_all_bgs(self.BACKGROUND_COLOR, self)
-        
-    def _show_popup(self, title, text):
-        '''Show a popup with the given text as the content.'''
-        
-        self._popup = Toplevel(self)
-        self._popup.title(title)
-        
-        f = Frame(self._popup, width=300) # a bit arbitrary
-        f.pack(expand=True, fill=BOTH)
-        
-        msg = Message(f, text=text, width=f.winfo_reqwidth() - 10)
-        msg.pack(expand=True, fill=BOTH)
-        f.bind("<Configure>", lambda e: msg.config(width=e.width-10))
-        
-        b = Button(f, text="OK", command=self._destroy_popup)
-        b.pack()
-        
-        self._popup.bind("<Return>", self._destroy_popup)
-        self._popup.grab_set()
-        self._popup.focus_set()
-        self.master.wait_window(self._popup)
         
     def _destroy_popup(self, event=None):
         '''Process removal of the popup.'''
@@ -115,7 +94,7 @@ class Game(Frame):
         f = open(help_page_location, "r")
         lines = f.read()
         f.close()
-        self._show_popup("Rules", lines)
+        tkMessageBox.showinfo("Rules", lines)
         
     def show_keyboard_shortcuts(self):
         '''Show a dialog box with the keyboard shortcuts.'''
@@ -125,7 +104,7 @@ class Game(Frame):
         f = open(ks_page_location, "r")
         lines = f.read()
         f.close()
-        self._show_popup("Keyboard Shortcuts", lines)
+        tkMessageBox.showinfo("Keyboard Shortcuts", lines)
         
     def _create_menu(self):
         '''Create the menu in the GUI.'''
@@ -223,7 +202,7 @@ class Game(Frame):
             battleship.GameController.AI_PLAYER : self.GAME_OVER_LOSE_MSG
         } [winner]
             
-        self._show_popup(self.GAME_OVER_POPUP_TITLE, msg)
+        tkMessageBox.showinfo(self.GAME_OVER_POPUP_TITLE, msg)
         
     def process_placing_state(self):
         '''Basic stuff to do during placing state.'''
