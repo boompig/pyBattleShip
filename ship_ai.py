@@ -3,17 +3,12 @@ Written by Daniel Kats
 March 5, 2013
 '''
 
-#################################################
-#                    IMPORTS                    #
-from ship_model import Ship
-from grid_model import GridModel
-#                                               #
-#################################################
-#                                               #
 from collections import deque
 from sys import maxint, stdout
-#                                               #
-#################################################
+import random
+
+from ship_model import Ship
+from grid_model import GridModel
 
 def minint():
     '''Return system's most negative int.'''
@@ -34,21 +29,49 @@ class ShipAI(object):
         self._home_model = home_grid_model
         self.reset()
         
-    def place_ships(self):
-        '''Place the ships on the grid.
-        This placement will be sub-optimal but still mildly smart.'''
+    def _place_ships_based_on_stat_model(self):
+        '''Place ships based on the stat model alone.
+        The problem with this method is it is non-stochastic - i.e. will generate
+        the same placements over and over again.'''
         
         self.reverse_probs()
-        self._placements = {}
 
         for val in sorted(self._d.keys()):
             for root in self._d[val]:
                 for ship in filter(lambda s: s not in self._placements, Ship.SHORT_NAMES):
-                    if self.try_place(root, ship):
+                    if self.try_place_max_prob(root, ship):
                         if len(self._placements) == 5:
                             return True
                         # break here, because no point adding different ship to same place
                         break
+        
+    def _place_ships_randomly(self):
+        '''Place ships completely randomly.
+        This method does not look at probabilities. Just picks random spots.'''
+        
+        valid_squares = set(zip(range(GridModel.SIZE), range(GridModel.SIZE)))
+        i = 0
+        
+        while i < len(Ship.SHORT_NAMES) and len(valid_squares) > 0:
+            sq = random.sample(valid_squares, 1)[0] #note that Python does not support random.choice for sets
+            v = random.choice([True, False])
+            ship = Ship(x=sq[0], y=sq[1], type=Ship.SHORT_NAMES[i], vertical=v)
+            # try to place this ship
+            if self.try_place_ship(ship):
+                i += 1
+                valid_squares.difference_update(set(ship.get_covering_squares()))
+                
+        return len(self._placements) == len(Ship.SHORT_NAMES)
+        
+    def place_ships(self):
+        '''Place the ships on the grid.
+        Currently using completely random placement, but others available in source.'''
+        
+        self._placements = {}
+        #result = self._place_ships_based_on_stat_model()
+        result = self._place_ships_randomly()
+        #assert len(self._placements) == len(Ship.SHORT_NAMES)
+        return result
 
     def print_results(self):
         '''Show results of placement.'''
@@ -58,8 +81,20 @@ class ShipAI(object):
             for coord in item.get_covering_squares():
                 print "{} --> {}".format(coord, self._probs[coord])
 
-    def try_place(self, root, ship):
-        '''Try to place the given ship at the root, at any orientation.
+    def try_place_ship(self, s):
+        '''Try to place the given ship object on the grid.
+        Return whether the placement succeeded.'''
+        
+        if self._home_model.can_add(s):
+            self._home_model.add(s)
+            self._placements[s.get_short_name()] = s
+            return True
+        else:
+            return False
+
+    def try_place_max_prob(self, root, ship):
+        '''Try to place the given ship, with base coordinate <root>.
+        Try to maximize the probability of the ship not being hit, using the stat model, by trying both orientations.
         Return the result.'''
 
         ships = [
@@ -68,9 +103,7 @@ class ShipAI(object):
         ]
 
         for s in sorted(ships, key=self.get_ship_prob):
-            if self._home_model.can_add(s):
-                self._home_model.add(s)
-                self._placements[ship] = s
+            if self.try_place_ship(s):
                 return True
 
         return False
@@ -101,7 +134,6 @@ class ShipAI(object):
             #print "{} <-- {}".format(val, coord)
             self._d[val].append(coord)
             
-        
     def load_probs(self, fname):
         '''Load probabilities from a file.'''
         
@@ -144,7 +176,6 @@ class ShipAI(object):
             
         # remake the stat model around this ship
         self.make_stat_model()#x - margin, x + margin, y - margin, y + margin)
-        
         
     def _prelim_mark_stat_model_square(self, x, y):
         state = self._enemy_model.get_state(x, y)
@@ -235,7 +266,6 @@ class ShipAI(object):
         f = open(fname, "w")
         self._write_stat_model(f)
         f.close()
-        
         
 def foo():
     grid = GridModel()
