@@ -86,8 +86,7 @@ class GameController(object):
         
         self._set_cwd()
         self._game_files_setup()
-        self._create_game_id()
-        print "Game ID: %d" % self._game_id
+        self._saved = False
 
         # create the UI
         app = Tk()
@@ -138,47 +137,58 @@ class GameController(object):
             if GameController.DEV_FLAG:
                 print "{} <-- {}".format(key_binding, fn.__name__)
         
-    def save_callback(self, event=None, fname=None, compact=False):
+    def save_callback(self, event=None, fname=None):
         '''Write the game configuration to a JSON file.
         Cannot save the game before both AI and human player have placed ships.
-        fname is the file name
-        compact is boolean indicating whether to represent the JSON compactly or not. Should be True unless debugging.'''
-
-        if fname is None:
-            fname = tkFileDialog.asksaveasfilename(defaultextension="json", 
-                    initialdir=os.path.join(os.getcwd(), self.SAVE_DIR),
-                    filetypes=[("Battleship Games", "*.json")])
-            #error-check user input
-            assert not isinstance(fname, list) and len(fname) > 0
+        fname is the file name'''
 
         grids = [self.game_frame.my_grid._model, self.game_frame.their_grid._model]
-        # basic error checking - this method is meaningless for grids with unplaced ships
-        assert all([g.has_all_ships() for g in grids])
-        obj = OrderedDict()
-        obj["game_id"] = self._game_id
         
-        # write ship placement
-        for grid, player in zip(grids, GameController.PLAYERS):
-            obj[player] = {}
-            obj[player]["ships"] = grid.get_ship_placement()
-            obj[player]["shots"] = grid.get_shots()
-        
-        main_obj = {"battleship" : obj} # bind all data to a root element
-        fp = open(fname, "w")
-        if compact:
-            json.dump(main_obj, fp, separators=(',', ':'))
+        if all([g.has_all_ships() for g in grids]):
+            while fname is None or isinstance(fname, list): 
+                fname = tkFileDialog.asksaveasfilename(defaultextension="json", 
+                        initialdir=os.path.join(os.getcwd(), self.SAVE_DIR),
+                        filetypes=[("Battleship Games", "*.json")])
+                
+                if isinstance(fname, list):
+                    self.game_frame.show_warning("Select one file only")
+                    
+            if len(fname) == 0:
+                # user pressed cancel. abort
+                return
+            
+            if not self._saved:
+                self._create_game_id()
+            
+            obj = OrderedDict()
+            obj["game_id"] = self._game_id
+            
+            # write ship placement
+            for grid, player in zip(grids, GameController.PLAYERS):
+                obj[player] = {}
+                obj[player]["ships"] = grid.get_ship_placement()
+                obj[player]["shots"] = grid.get_shots()
+            
+            main_obj = {"battleship" : obj} # bind all data to a root element
+            fp = open(fname, "w")
+            if GameController.DEV_FLAG:
+                json.dump(main_obj, fp, indent=4, separators=(',', ': '))
+            else:
+                json.dump(main_obj, fp, separators=(',', ':'))
+            fp.close()
+            
+            self._saved = True
         else:
-            json.dump(main_obj, fp, indent=4, separators=(',', ': '))
-        fp.close()
+            self.game_frame.show_warning("You cannot save the game before you place your ships and start playing.")
 
     def autosave_callback(self, event=None):
-        '''Auto-save the state of the game in some file. Do this occassionally.'''
+        '''Auto-save the state of the game in some file. Do this occasionally.'''
 
-        self.save_callback(event, os.path.join(GameController.AUTOSAVE_DIR, str(uuid.uuid4()) + ".json"), compact=True)
+        self.save_callback(event, os.path.join(GameController.AUTOSAVE_DIR, str(uuid.uuid4()) + ".json"))
 
     def load_callback(self, event=None, fname=None):
         '''Read the JSON game configuration from file called <code>fname</code>.
-        Return a dictionary representing the parsed JSON. All the strings are unicode.
+        Return a dictionary representing the parsed JSON. All the strings are Unicode.
         
         error_check should be True, turn to False to disable strict error checking for debugging.
         
@@ -415,6 +425,7 @@ class GameController(object):
         '''Call this when the game is over (one of the players has won).
         Initiate appropriate events in model and view.'''
         
+        self.autosave_callback()
         self.game_frame._state = mock1.Game.GAME_OVER
         self.game_frame.process_state()
         self.game_frame.show_game_over_popup(self._winner)
