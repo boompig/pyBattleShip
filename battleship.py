@@ -86,7 +86,6 @@ class GameController(object):
         
         self._set_cwd()
         self._game_files_setup()
-        self._saved = False
 
         # create the UI
         app = Tk()
@@ -184,7 +183,7 @@ class GameController(object):
     def autosave_callback(self, event=None):
         '''Auto-save the state of the game in some file. Do this occasionally.'''
 
-        self.save_callback(event, os.path.join(GameController.AUTOSAVE_DIR, str(uuid.uuid4()) + ".json"))
+        self.save_callback(event, self._autosave_fname)
 
     def load_callback(self, event=None, fname=None):
         '''Read the JSON game configuration from file called <code>fname</code>.
@@ -433,6 +432,9 @@ class GameController(object):
     def new_game_callback(self, event=None):
         '''Start a new game.
         This method can be called at any time.'''
+        
+        self._saved = False
+        self._autosave_fname = os.path.join(GameController.AUTOSAVE_DIR, str(uuid.uuid4()) + ".json")
         
         self.game_frame._winner = None
         self.game_frame._set_ships = {ship : False for ship in Ship.SIZES.keys()}
