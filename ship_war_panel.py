@@ -39,7 +39,9 @@ class ShipWarPanel(Frame):
         self.pack_ui()
         
     def update(self, ship, hit_list=None):
-        '''Update the given ship.'''
+        '''Update the given ship.
+        <ship> should be a Ship object.
+        <hit_list> should be a binary list'''
         
         if hit_list is None:
             hit_list = ship.get_hit_list()
@@ -56,6 +58,14 @@ class ShipWarPanel(Frame):
         for ship in Ship.SHORT_NAMES:
             s = Ship(0, 0, ship, False)
             self.update(s, [0] * s.get_size())
+            
+    def redraw(self, model):
+        '''Redraw the panel based on the GridModel.
+        <model> is an instance of GridModel.'''
+        
+        for ship_name, ship in model.get_ships().iteritems():
+            self.update(ship)
+            
         
     def _create_ships(self):
         '''Create ships on the canvas.'''

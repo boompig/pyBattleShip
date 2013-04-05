@@ -203,6 +203,17 @@ class GridModel(object):
         
         return {name: [ship._x, ship._y, ship.is_vertical()] for name, ship in self._ships.items()}
         
+    def get_ships(self):
+        '''Return a mapping of ship name to ship object: {str ==> Ship}
+        This is the original object, so should only be used for read operations.'''
+        
+        return self._ships
+    
+    def get_missed_shots(self):
+        '''Return a list of shots on this grid, but only those that missed.'''
+        
+        return filter(lambda sq: self._state_dict[sq] == Ship.MISS, self._state_dict.keys())
+        
     def get_shots(self):
         '''Return list of shots made on this grid.'''
         

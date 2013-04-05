@@ -48,6 +48,7 @@ class GameController(object):
     SAVE_DIR = "saves"
     AUTOSAVE_DIR = os.path.join(SAVE_DIR, "autosaves")
     DEFAULT_SAVE_FILE = "battleship.json"
+    DEFAULT_LOAD_FILE = DEFAULT_SAVE_FILE
     #####################################
     
     ########## Key Game Files ###########
@@ -101,6 +102,11 @@ class GameController(object):
         self.game_frame.grab_set()
         self.game_frame.focus_set()
         
+        # fast access to models:
+        #TODO models should be moved into this class
+        self.my_grid = self.game_frame.my_grid._model
+        self.enemy_grid = self.game_frame.their_grid._model
+        
         # and the individual controllers
         self.my_controller = PlayerController(self.game_frame.my_grid_frame)
         self.their_controller = PlayerController(self.game_frame.their_grid_frame)
@@ -136,6 +142,7 @@ class GameController(object):
         # enable special controls for dev to fast-navigate the app
         if GameController.DEV_FLAG:
             d["X"] = self.exit_callback
+            d["Q"] = self.quick_load_callback
         
         for key_binding, fn in d.iteritems():
             self.game_frame.master.bind(key_binding, fn) # has to be master
@@ -147,7 +154,7 @@ class GameController(object):
         Cannot save the game before both AI and human player have placed ships.
         fname is the file name'''
 
-        grids = [self.game_frame.my_grid._model, self.game_frame.their_grid._model]
+        grids = [self.enemy_grid, self.enemy_grid]
         
         if all([g.has_all_ships() for g in grids]):
             while fname is None or isinstance(fname, list): 
@@ -190,8 +197,13 @@ class GameController(object):
         '''Auto-save the state of the game in some file. Do this occasionally.'''
 
         self.save_callback(event, self._autosave_fname)
+        
+    def quick_load_callback(self, event=None):
+        '''Developer tool: quickly load existing game.'''
+        
+        self.load_callback(event, GameController.DEFAULT_LOAD_FILE, warn=False)
 
-    def load_callback(self, event=None, fname=None):
+    def load_callback(self, event=None, fname=None, warn=True):
         '''Read the JSON game configuration from file called <code>fname</code>.
         Return a dictionary representing the parsed JSON. All the strings are Unicode.
         
@@ -210,39 +222,39 @@ class GameController(object):
         obj = json.load(fp)["battleship"] # do this so we don't have to reference ["battleship"] every time
         fp.close()
         
-        if tkMessageBox.askyesno(
+        if not warn or tkMessageBox.askyesno(
            "Load Game", 
            "Loading another game will cause you to lose all unsaved progress. Continue?"):
 
             self.new_game_callback()
             #TODO just for now, to see if it works
-            print obj
-            return
+            #print obj
+            
         
             # load the models
             
             #TODO models go here
-            grids = [GridModel(), GridModel()]
+            grids = [self.game_frame.my_grid._model, self.game_frame.their_grid._model]
             
             # placing ships
             for grid, player in zip(grids, GameController.PLAYERS):
                 for ship_name, coords in obj[player]["ships"].iteritems():
                     s = Ship(type=str(ship_name),  x=coords[0], y=coords[1], vertical=coords[2])
                     success = grid.add(s)
-                    
-                    if error_check:
-                        assert success
+                    #TODO handle the case when this fails (means bad initial config)
+                    assert success
                 
                 grid.finalize(error_check=False)
                 
             # firing shots
-            for grid, player in zip(grids, PLAYERS):
+            for grid, player in zip(grids, GameController.PLAYERS):
                 for shot in obj[player]["shots"]:
                     grid.process_shot(*shot)
                     
             
                     
-            return grids
+            self.game_frame.redraw()
+            return
 
     def warn_hi(self):
         self.game_frame.show_warning("hi")
@@ -265,11 +277,14 @@ class GameController(object):
         
         # menus
         self.game_frame.file_menu.entryconfig(self.game_frame.menus["file_new_game"], command=self.new_game_callback)
+        self.game_frame.file_menu.entryconfig(self.game_frame.menus["file_save"], command=self.save_callback)
+        self.game_frame.file_menu.entryconfig(self.game_frame.menus["file_open"], command=self.load_callback)
         self.game_frame.file_menu.entryconfig(self.game_frame.menus["file_exit"], command=self.exit_callback)
         
         if GameController.DEV_FLAG:
             self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_auto_place"], command=self.autoplace_ships_callback)
             self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_random_shot"], command=self.random_shot_callback)
+            self.game_frame.dev_menu.entryconfig(self.game_frame.menus["dev_auto_load"], command=self.quick_load_callback)
     
     def read_game_state(self, fname):
         '''Read game state from the given file. fname is the file name.'''
@@ -305,7 +320,7 @@ class GameController(object):
         If some error occurs, abort the operation and display warning in the UI.'''
     
         #TODO sanity check before transition
-        if self.game_frame.my_grid._model.has_all_ships():
+        if self.enemy_grid.has_all_ships():
             #   update view
             self.game_frame._state = self.game_frame.PLAYING
             self.game_frame.process_state()
@@ -345,7 +360,7 @@ class GameController(object):
         Will only execute in play state.'''
         
         if self.game_frame._state == mock1.Game.PLAYING:
-            grid = self.game_frame.their_grid._model
+            grid = self.enemy_grid
             l2 = grid.get_null_squares()
             shot = random.choice(tuple(l2))
             self.shot_square(shot)
@@ -396,10 +411,10 @@ class GameController(object):
         self.game_frame.their_grid.itemconfig(id, state=DISABLED)
         
         if result == Ship.SUNK:
-            ship = self.game_frame.their_grid._model.get_sunk_ship(*shot)
+            ship = self.enemy_grid.get_sunk_ship(*shot)
             self.game_frame.their_grid_frame.ship_panel.set_sunk(ship.get_short_name())
         
-            if self.game_frame.their_grid._model.all_sunk():
+            if self.enemy_grid.all_sunk():
                 self._winner = GameController.HUMAN_PLAYER
                 
         return result
@@ -416,12 +431,12 @@ class GameController(object):
         result = self.game_frame.my_grid.process_shot(id)
         
         if result == Ship.HIT or result == Ship.SUNK:
-            self.game_frame._set_ship_hit(self.game_frame.my_grid._model.get_ship_at(*shot))
+            self.game_frame._set_ship_hit(self.enemy_grid.get_ship_at(*shot))
             
         if result == Ship.SUNK:
-            self.game_frame._set_ship_sunk(self.game_frame.my_grid._model.get_sunk_ship(*shot).get_short_name())
+            self.game_frame._set_ship_sunk(self.enemy_grid.get_sunk_ship(*shot).get_short_name())
         
-            if self.game_frame.my_grid._model.all_sunk():
+            if self.enemy_grid.all_sunk():
                 self._winner = GameController.AI_PLAYER
                 
         # update the AI with the shot's result

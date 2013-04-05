@@ -16,8 +16,7 @@ from Tkinter import *
 
 class ShipPanel(Frame):
     '''
-    Panel containing the names of all the ships.
-    Monitors state of each ship over the course of the game.
+    Panel that keeps track of your ships as they get placed onto the board.
     '''
 
     ########### geometry ##########
@@ -27,7 +26,7 @@ class ShipPanel(Frame):
     ########### states ############
     UNPLACED = 0
     PLACED = 1
-    SUNK = 2
+    SUNK = 2 # <-- should be unused
     ###############################
     
     ########### colors ############
@@ -37,7 +36,8 @@ class ShipPanel(Frame):
     ###############################
 
     def __init__(self, master):
-        '''Create a new ship panel.'''
+        '''Create a new ship panel.
+        <master> is the parent TKinter element.'''
         
         Frame.__init__(self, master)
         self._create_ui()
@@ -82,6 +82,13 @@ class ShipPanel(Frame):
             ShipPanel.PLACED : ShipPanel.PLACED_COLOR,
             ShipPanel.SUNK : ShipPanel.SUNK_COLOR
         } [state]
+        
+    def redraw(self, model):
+        '''Redraw the entire panel based on the model.
+        <model> is the ship grid.'''
+        
+        for ship_name in model.get_ship_placement().iterkeys():
+            self.set_placed(ship_name)
         
     def click(self, ship):
         '''Click given button.'''

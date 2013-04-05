@@ -29,11 +29,20 @@ class EnemyShipPanel(Frame):
             )
             self.ship_labels[short_name].grid(row=i, column=0, sticky=W, ipady=5)
             i += 1
+            
+    def redraw(self, model):
+        '''Redraw the panel based on GridModel.
+        <model> is an instance of GridModel.'''
         
-    def set_sunk(self, ship):
-        '''Given teh short name for the ship, set it to sunk.'''
+        for name, ship in model.get_ships().iteritems():
+            if ship.is_sunk():
+                self.set_sunk(name)
         
-        self.ship_labels[ship].config(fg=self.SHIP_SUNK)
+    def set_sunk(self, ship_name):
+        '''Given the short name for the ship, set it to sunk.
+        <ship_name> is the short name for the ship'''
+        
+        self.ship_labels[ship_name].config(fg=self.SHIP_SUNK)
     
 if __name__ == "__main__":
     app = Tk()

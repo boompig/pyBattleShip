@@ -117,6 +117,12 @@ class Game(Frame):
         self.file_menu.add_command(label="New Game")#, command=self.reset)
         self.menus["file_new_game"] = count
         count += 1
+        self.file_menu.add_command(label="Save")
+        self.menus["file_save"] = count
+        count += 1
+        self.file_menu.add_command(label="Open")
+        self.menus["file_open"] = count
+        count += 1
         self.file_menu.add_command(label="Exit")#, command=self.master.destroy)
         self.menus["file_exit"] = count
         count += 1
@@ -130,6 +136,9 @@ class Game(Frame):
             count += 1
             self.dev_menu.add_command(label="Random Shot")
             self.menus["dev_random_shot"] = count
+            count += 1
+            self.dev_menu.add_command(label="Auto Load")
+            self.menus["dev_auto_load"] = count
             count += 1
             menubar.add_cascade(label="Dev", menu=self.dev_menu)
         
@@ -368,6 +377,32 @@ class Game(Frame):
         
         self.play_game_button = Button(button_frame, text="Play")
         self.play_game_button.pack(side=LEFT, padx=self.BUTTON_PADDING, pady=self.BUTTON_PADDING)
+        
+    def redraw(self):
+        '''Redraw the GUI, reloading all info from the model.
+        TODO this is a work-in-progress'''
+        
+        # first, figure out the state
+        # are the ships placed? are they sunk?
+        grids = [self.my_grid._model, self.their_grid._model]
+        
+        # set panels to the correct state
+        self.my_grid_frame.ship_panel.redraw(grids[0])
+        self.my_grid_frame._ship_war_panel.redraw(grids[0])
+        self.their_grid_frame.ship_panel.redraw(grids[1])
+        
+        # set the grid to the correct state
+        self.my_grid.redraw(grids[0])
+        self.their_grid.redraw(grids[1])
+        
+        if all([g.has_all_ships() for g in grids]) and all([g.all_sunk() for g in grids]):
+            # state is game over.
+            pass
+        elif all([g.has_all_ships() for g in grids]):
+            self.process_playing_state()
+        else:
+            # state is placing
+            pass
         
 def hide(w):
     w.config(state=HIDDEN)

@@ -95,6 +95,18 @@ class ShipGrid(Canvas):
             if self._prev_state[id]:
                 self.itemconfig(id, state=NORMAL)
         
+    def redraw(self, model):
+        '''Redraw the grid based on the model.
+        <model> is an instance of GridModel'''
+        
+        # first, add ships
+        for ship_name, ship in model.get_ships().iteritems():
+            self.add_ship_to_view(ship)
+            
+        # process missed shots (and hits as well)
+        for x, y in model.get_missed_shots():
+            self._set_tile_state(x, y, Ship.MISS)
+        
     def reset(self):
         '''Reset the grid to starting values.'''
         
@@ -116,6 +128,22 @@ class ShipGrid(Canvas):
             self._prev_state[id] = False 
             self.itemconfig(id, state=NORMAL)
             self._set_tile_state(x, y)
+            
+    def add_ship_to_view(self, ship):
+        '''Add a ship to the view. Do not update underlying model.
+        Add the ship in the state of 'just placed'.
+        <ship> is a Ship object.'''
+        
+        print ship
+        
+        if ship.is_sunk():
+            for x, y in ship.get_covering_squares():
+                self._set_tile_state(x, y, state=Ship.SUNK)
+        else:
+            for sq, hit in zip(ship.get_covering_squares(), ship.get_hit_list()):
+                s = (Ship.HIT if hit else Ship.OTHER)
+                if hit or self._home:
+                    self._set_tile_state(sq[0], sq[1], state=s)
         
     def add_ship(self, x, y, ship, vertical, callback=None):
         '''Add a ship at (x, y). Vertical is the orientation - True of False.'''
@@ -132,8 +160,8 @@ class ShipGrid(Canvas):
                 for sq in prev_ship.get_covering_squares():
                     self._set_tile_state(*sq) # reset state
             self._model.add_ship(x, y, ship, vertical)
-            for sq in Ship(x, y, ship, vertical).get_covering_squares():
-                self._set_tile_state(*sq, state=Ship.OTHER)
+            s = Ship(x, y, ship, vertical)
+            self.add_ship_to_view(s)
             
             if callback is not None:
                 callback()
