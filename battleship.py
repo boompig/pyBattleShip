@@ -18,6 +18,7 @@ from grid_model import GridModel
 from ship_ai import ShipAI
 import mock1
 from player_controller import PlayerController
+#from splash.splash import SplashScreen
 
 class GameController(object):
     '''
@@ -87,6 +88,12 @@ class GameController(object):
         fp.write(str(self._game_id))
         fp.close()
 
+    def show_splash(self, app):
+        '''Show the splash screen.'''
+        
+        s = SplashScreen(app)
+        s.pack(expand=1)
+
     def __init__(self): 
         '''Create a main controller for the game.
         Create the GUI. Run the game.'''
@@ -96,7 +103,8 @@ class GameController(object):
 
         # create the UI
         app = Tk()
-    
+        #self.show_splash(app)
+        
         self.game_frame = mock1.Game(app)
         self.game_frame.pack(fill=BOTH, expand=1)
         self.game_frame.grab_set()

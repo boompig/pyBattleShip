@@ -134,7 +134,7 @@ class ShipGrid(Canvas):
         Add the ship in the state of 'just placed'.
         <ship> is a Ship object.'''
         
-        print ship
+        #print ship
         
         if ship.is_sunk():
             for x, y in ship.get_covering_squares():

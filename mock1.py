@@ -396,11 +396,13 @@ class Game(Frame):
         self.their_grid.redraw(grids[1])
         
         if all([g.has_all_ships() for g in grids]) and all([g.all_sunk() for g in grids]):
+            #TODO
             # state is game over.
             pass
         elif all([g.has_all_ships() for g in grids]):
             self.process_playing_state()
         else:
+            #TODO
             # state is placing
             pass
         
