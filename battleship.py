@@ -3,9 +3,17 @@ Written by Daniel Kats
 April 3, 2013
 ''' 
 
-import tkFileDialog
-import tkMessageBox
-from Tkinter import Tk, BOTH, CURRENT, DISABLED
+try:
+    import tkFileDialog
+except ImportError:
+    from tkinter import filedialog as tkFileDialog
+try:
+    import tkMessageBox
+except ImportError:
+    from tkinter import messagebox as tkMessageBox
+
+from six.moves.tkinter import Tk, BOTH, CURRENT, DISABLED
+
 from collections import OrderedDict
 import uuid
 # import time
@@ -145,10 +153,10 @@ class GameController(object):
             d["X"] = self.exit_callback
             d["Q"] = self.quick_load_callback
         
-        for key_binding, fn in d.iteritems():
+        for key_binding, fn in d.items():
             self.game_frame.master.bind(key_binding, fn) # has to be master
             if GameController.DEV_FLAG:
-                print "{} <-- {}".format(key_binding, fn.__name__)
+                print("{} <-- {}".format(key_binding, fn.__name__))
         
     def save_callback(self, event=None, fname=None):
         '''Write the game configuration to a JSON file.
@@ -173,26 +181,28 @@ class GameController(object):
             if not self._saved:
                 self._create_game_id()
             
-            obj = OrderedDict()
+            obj = {}
             obj["game_id"] = self._game_id
             
             # write ship placement
             for grid, player in zip(grids, GameController.PLAYERS):
                 obj[player] = {}
                 obj[player]["ships"] = grid.get_ship_placement()
-                obj[player]["shots"] = grid.get_shots()
+                obj[player]["shots"] = list(grid.get_shots())
             
             main_obj = {"battleship" : obj} # bind all data to a root element
             head, tail = os.path.split(fname)
             if not os.path.isdir(head):
                 os.makedirs(head)
-            fp = open(fname, "w")
-            if GameController.DEV_FLAG:
-                json.dump(main_obj, fp, indent=4, separators=(',', ': '))
-            else:
-                json.dump(main_obj, fp, separators=(',', ':'))
-            fp.close()
-            
+            with open(fname, "w") as fp:
+                try:
+                    if GameController.DEV_FLAG:
+                        json.dump(main_obj, fp, indent=4, separators=(',', ': '))
+                    else:
+                        json.dump(main_obj, fp, separators=(',', ':'))
+                except TypeError as e:
+                    print(main_obj)
+                    raise e
             self._saved = True
         else:
             self.game_frame.show_warning("You cannot save the game before you place your ships and start playing.")
@@ -242,7 +252,7 @@ class GameController(object):
             
             # placing ships
             for grid, player in zip(grids, GameController.PLAYERS):
-                for ship_name, coords in obj[player]["ships"].iteritems():
+                for ship_name, coords in obj[player]["ships"].items():
                     s = Ship(type=str(ship_name),  x=coords[0], y=coords[1], vertical=coords[2])
                     success = grid.add(s)
                     #TODO handle the case when this fails (means bad initial config)
@@ -324,7 +334,7 @@ class GameController(object):
         If some error occurs, abort the operation and display warning in the UI.'''
     
         #TODO sanity check before transition
-        if self.enemy_grid.has_all_ships():
+        if self.my_grid.has_all_ships():
             #   update view
             self.game_frame._state = self.game_frame.PLAYING
             self.game_frame.process_state()
@@ -349,7 +359,7 @@ class GameController(object):
     def place_ship_callback(self, event=None):
         '''Respond to a place event.'''
         
-        print "Placed"
+        print("Placed")
         
         # pos = get_tile_from_mouse_position
         # if ship can be placed at current pos

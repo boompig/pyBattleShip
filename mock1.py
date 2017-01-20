@@ -3,8 +3,12 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import Frame, Menu, LEFT, DISABLED, NORMAL, Label, Button, HIDDEN, Tk, BOTH
-import tkMessageBox
+from six.moves.tkinter import Frame, Menu, LEFT, DISABLED, NORMAL, Label, Button, HIDDEN, Tk, BOTH
+
+try:
+    import tkMessageBox
+except ImportError:
+    from tkinter import messagebox as tkMessageBox
 
 from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
@@ -309,7 +313,7 @@ class Game(Frame):
         
         # reset indicators on ships in panels
         self.my_grid_frame._ship_war_panel.reset()
-        for ship, button in self.my_grid_frame.ship_panel.ship_buttons.iteritems():
+        for ship, button in self.my_grid_frame.ship_panel.ship_buttons.items():
             button.config(foreground="black")
         
         for x, y in self.my_grid.get_tiles():

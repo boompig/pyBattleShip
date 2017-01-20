@@ -3,7 +3,7 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import LEFT, Frame
+from six.moves.tkinter import LEFT, Frame
 from ship_model import Ship
 
 

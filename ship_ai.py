@@ -3,16 +3,16 @@ Written by Daniel Kats
 March 5, 2013
 '''
 
-from sys import maxint, stdout
+from __future__ import print_function
+from sys import stdout
 import random
 
 from ship_model import Ship
 from grid_model import GridModel
 
-def minint():
+def min_number():
     '''Return system's most negative int.'''
-
-    return -1 * maxint - 1
+    return float("-inf")
 
 class ShipAI(object):
     '''A naive battleship AI.'''
@@ -75,10 +75,10 @@ class ShipAI(object):
     def print_results(self):
         '''Show results of placement.'''
 
-        for item in self._placements.itervalues():
-            print "**** ship: " + item.get_full_name()
+        for item in self._placements.values():
+            print("**** ship: " + item.get_full_name())
             for coord in item.get_covering_squares():
-                print "{} --> {}".format(coord, self._probs[coord])
+                print("{} --> {}".format(coord, self._probs[coord]))
 
     def try_place_ship(self, s):
         '''Try to place the given ship object on the grid.
@@ -119,14 +119,14 @@ class ShipAI(object):
             return self._probs[tile]
         else:
             # super negative
-            return minint()
+            return min_number()
 
     def reverse_probs(self):
         '''Reverse the probability table, instead mapping from values to coordinates.'''
 
         self._d = {}
 
-        for coord, val in self._probs.iteritems():
+        for coord, val in self._probs.items():
             if val not in self._d:
                 self._d[val] = []
 
@@ -148,7 +148,7 @@ class ShipAI(object):
     def reset(self):
         self._prev_shot = None
         self._probs = {}
-        self._unsunk_ships = Ship.SIZES.keys()
+        self._unsunk_ships = list(Ship.SIZES.keys())
         
     def get_shot(self):
         max_val = 0
@@ -281,10 +281,10 @@ def foo():
     
     for i in range(10):
         shot = ai.get_shot()
-        print "Shot: " + str(shot)
+        print("Shot: " + str(shot))
         #print "Shot: {}".format(shot)
         result = grid.process_shot(*shot)
-        print "Result: " + Ship.SHOT_RESULTS[result]
+        print("Result: " + Ship.SHOT_RESULTS[result])
         ai.set_shot_result(*shot, result=result)
         
         if result == Ship.HIT:

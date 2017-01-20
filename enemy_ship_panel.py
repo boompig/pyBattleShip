@@ -1,4 +1,5 @@
-from Tkinter import Tk, W, LEFT, Label, Frame
+from six.moves.tkinter import Tk, W, LEFT, Label, Frame
+
 from ship_model import Ship
 
 class EnemyShipPanel(Frame):
@@ -20,7 +21,7 @@ class EnemyShipPanel(Frame):
         self.ship_labels = {}
         i = 0
         
-        for short_name, full_name in Ship.NAMES.iteritems():
+        for short_name, full_name in Ship.NAMES.items():
             self.ship_labels[short_name] = Label(
                 self, 
                 text=full_name.title(), 
@@ -34,7 +35,7 @@ class EnemyShipPanel(Frame):
         '''Redraw the panel based on GridModel.
         <model> is an instance of GridModel.'''
         
-        for name, ship in model.get_ships().iteritems():
+        for name, ship in model.get_ships().items():
             if ship.is_sunk():
                 self.set_sunk(name)
         

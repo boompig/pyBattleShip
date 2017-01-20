@@ -23,3 +23,5 @@ TODO
 
 # for now, ignore autosaves
 saves/autosaves/*.json
+
+venv*

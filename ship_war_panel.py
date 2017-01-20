@@ -3,7 +3,7 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import Frame, Canvas, NW
+from six.moves.tkinter import Frame, Canvas, NW
 from ship_model import Ship
 
 class ShipWarPanel(Frame):
@@ -63,7 +63,7 @@ class ShipWarPanel(Frame):
         '''Redraw the panel based on the GridModel.
         <model> is an instance of GridModel.'''
         
-        for ship_name, ship in model.get_ships().iteritems():
+        for ship_name, ship in model.get_ships().items():
             self.update(ship)
             
         

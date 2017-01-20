@@ -8,7 +8,7 @@ March 4, 2013
 #################
 
 from ship_model import Ship
-from Tkinter import N, E, S, W, Tk, Frame, Radiobutton, IntVar
+from six.moves.tkinter import N, E, S, W, Tk, Frame, Radiobutton, IntVar
 
 ####################
 #    MAIN CLASS    #
@@ -70,7 +70,7 @@ class ShipPanel(Frame):
         '''Return this panel to its starting state.'''
         
         self.unselect_ship()
-        for ship in Ship.SIZES.iterkeys():
+        for ship in Ship.SIZES.keys():
             self.set_state(ship, self.UNPLACED)
         
     @staticmethod
@@ -87,7 +87,7 @@ class ShipPanel(Frame):
         '''Redraw the entire panel based on the model.
         <model> is the ship grid.'''
         
-        for ship_name in model.get_ship_placement().iterkeys():
+        for ship_name in model.get_ship_placement().keys():
             self.set_placed(ship_name)
         
     def click(self, ship):

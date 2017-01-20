@@ -3,7 +3,7 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import Canvas, NORMAL, DISABLED
+from six.moves.tkinter import Canvas, NORMAL, DISABLED
 from ship_model import Ship
 from grid_model import GridModel
 
@@ -78,7 +78,7 @@ class ShipGrid(Canvas):
     def disable(self):
         '''Disable all events on this grid.'''
         
-        for id in self._tiles.iterkeys():
+        for id in self._tiles.keys():
             self._prev_state[id] = (self.itemcget(id, 'state') == NORMAL)
             #if not self._prev_state[id]:
                 #print self._tiles[id]
@@ -87,7 +87,7 @@ class ShipGrid(Canvas):
     def enable(self):
         '''Re-enable the events on the grid.'''
         
-        for id in self._tiles.iterkeys():
+        for id in self._tiles.keys():
             if self._prev_state[id]:
                 self.itemconfig(id, state=NORMAL)
         
@@ -96,7 +96,7 @@ class ShipGrid(Canvas):
         <model> is an instance of GridModel'''
         
         # first, add ships
-        for ship_name, ship in model.get_ships().iteritems():
+        for ship_name, ship in model.get_ships().items():
             self.add_ship_to_view(ship)
             
         # process missed shots (and hits as well)
@@ -120,7 +120,7 @@ class ShipGrid(Canvas):
         self._prev_state = {} # this is only True for tiles disabled/enabled using disable and enable methods
         
         # reset the squares
-        for id, (x, y) in self._tiles.iteritems():
+        for id, (x, y) in self._tiles.items():
             self._prev_state[id] = False 
             self.itemconfig(id, state=NORMAL)
             self._set_tile_state(x, y)

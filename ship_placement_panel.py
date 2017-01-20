@@ -7,7 +7,7 @@ March 4, 2013
 #    IMPORTS    #
 #################
 
-from Tkinter import Frame, Label, StringVar, Button, Canvas
+from six.moves.tkinter import Frame, Label, StringVar, Button, Canvas
 
 ####################
 #    MAIN CLASS    #

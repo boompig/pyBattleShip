@@ -1,8 +1,10 @@
-from sys import stdout
 from collections import OrderedDict
 import itertools
+from six.moves import filter
+from sys import stdout
 
 from ship_model import Ship
+
 
 class GridModel(object):
     '''Model for one grid.
@@ -40,7 +42,7 @@ class GridModel(object):
         if error_check:
             assert len(self._ships) == len(Ship.SHIPS)
         
-        for ship_name, s in self._ships.iteritems():
+        for ship_name, s in self._ships.items():
             for sq in s.get_covering_squares():
                 self._coords[sq] = ship_name
         
@@ -88,7 +90,7 @@ class GridModel(object):
     def all_sunk(self):
         '''Return True iff all the ships on this grid have been sunk.'''
         
-        return all([s.is_sunk() for s in self._ships.itervalues()])
+        return all([s.is_sunk() for s in self._ships.values()])
         
     def get_null_squares(self):
         '''Return the set of all squares that have not yet been fired upon.
@@ -96,7 +98,7 @@ class GridModel(object):
         
         all_squares = itertools.product(range(self.SIZE), range(self.SIZE))
         #print tuple(all_squares)
-        l = itertools.ifilter(self.is_empty_square, all_squares)
+        l = filter(self.is_empty_square, all_squares)
         #print tuple(l)
         return l
     
@@ -129,7 +131,7 @@ class GridModel(object):
             - when placing initially, consider secret ships
             - when constructing model of opponent, hide secret ships'''
     
-        for other_name, other_ship in self._ships.iteritems():
+        for other_name, other_ship in self._ships.items():
             # ignore unsunk ships once ship placement is finalized
             if self._finalized and not other_ship.is_sunk():
                 continue
@@ -238,7 +240,7 @@ class GridModel(object):
     def _write(self, f):
         '''Write the configuration of this model to the given open file.'''
     
-        for ship in self._ships.itervalues():
+        for ship in self._ships.values():
             line = "%s %d %d %s" % (ship.get_name(), ship._x, ship._y, ship._get_str_v()[0])
             f.write(line + "\n")
     
