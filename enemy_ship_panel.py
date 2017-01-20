@@ -1,4 +1,4 @@
-from Tkinter import *
+from Tkinter import Tk, W, LEFT, Label, Frame
 from ship_model import Ship
 
 class EnemyShipPanel(Frame):

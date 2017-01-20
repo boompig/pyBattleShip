@@ -1,5 +1,3 @@
-from copy import deepcopy
-            
 '''
 Written by Daniel Kats
 March 4, 2013
@@ -180,7 +178,7 @@ class ShipLoader(object):
             if len(line.strip()) == 0 or line.strip().count(" ") != 3:
                 continue
                 
-            ship_type, x, y, v = l = line.strip().split()
+            ship_type, x, y, v = line.strip().split()
             
             if ship_type in Ship.SIZES:
                 ship = Ship(x=int(x), y=int(y), type=ship_type, vertical=v)

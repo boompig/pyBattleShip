@@ -3,7 +3,6 @@ Written by Daniel Kats
 March 5, 2013
 '''
 
-from collections import deque
 from sys import maxint, stdout
 import random
 
@@ -170,12 +169,13 @@ class ShipAI(object):
             # necessary to set sunk ship squares properly
             s = self._enemy_model.get_sunk_ship(*self._prev_shot)
             self._unsunk_ships.remove(s.get_name())
-            margin = s.get_size()
+            # margin = s.get_size()
         else:
-            margin = 5
-            
+            pass
+            # margin = 5
         # remake the stat model around this ship
-        self.make_stat_model()#x - margin, x + margin, y - margin, y + margin)
+        #x - margin, x + margin, y - margin, y + margin)
+        self.make_stat_model()
         
     def _prelim_mark_stat_model_square(self, x, y):
         state = self._enemy_model.get_state(x, y)
@@ -204,8 +204,7 @@ class ShipAI(object):
                 for ship in self._unsunk_ships:
                     for v in [True, False]:
                         s = Ship(x, y, ship, v)
-                        
-                        r = self.add_ship_to_stat_model(s)
+                        self.add_ship_to_stat_model(s)
                 
     def get_ship_stat_weight(self, s):
         w = 1

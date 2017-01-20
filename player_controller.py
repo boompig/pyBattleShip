@@ -3,13 +3,9 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import *
-from ship_model import Ship, ShipLoader
-import time
-from grid_model import GridModel
-from ship_ai import ShipAI
-from ship_placement_panel import ShipPlacementPanel
-from ship_panel import ShipPanel
+from Tkinter import LEFT, Frame
+from ship_model import Ship
+
 
 class PlayerController(object):
     '''Controller for this player's grid.

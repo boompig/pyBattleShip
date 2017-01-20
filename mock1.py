@@ -3,18 +3,15 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import *
+from Tkinter import Frame, Menu, LEFT, DISABLED, NORMAL, Label, Button, HIDDEN, Tk, BOTH
 import tkMessageBox
-import time
 
-from ship_model import Ship, ShipLoader
-from grid_model import GridModel
 from ship_ai import ShipAI
 from ship_placement_panel import ShipPlacementPanel
 from ship_grid import ShipGrid
 from ship_war_panel import ShipWarPanel
 from ship_panel import ShipPanel
-from player_controller import PlayerController, PlayerGridFrame
+from player_controller import PlayerGridFrame
 import battleship
 from enemy_ship_panel import EnemyShipPanel
 
@@ -356,6 +353,7 @@ class Game(Frame):
         TODO for now only called when one of MY ships is hit.
         UI shows that the given ship has been hit.'''
         
+        assert ship is not None
         self.my_grid_frame._ship_war_panel.update(ship)
         
     def ship_set(self, ship):

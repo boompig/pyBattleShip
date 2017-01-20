@@ -8,7 +8,7 @@ March 4, 2013
 #################
 
 from ship_model import Ship
-from Tkinter import *
+from Tkinter import N, E, S, W, Tk, Frame, Radiobutton, IntVar
 
 ####################
 #    MAIN CLASS    #

@@ -3,7 +3,7 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import *
+from Tkinter import Frame, Canvas, NW
 from ship_model import Ship
 
 class ShipWarPanel(Frame):
@@ -42,7 +42,7 @@ class ShipWarPanel(Frame):
         '''Update the given ship.
         <ship> should be a Ship object.
         <hit_list> should be a binary list'''
-        
+        assert ship is not None
         if hit_list is None:
             hit_list = ship.get_hit_list()
         

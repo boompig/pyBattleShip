@@ -1,6 +1,5 @@
 from sys import stdout
 from collections import OrderedDict
-import json
 import itertools
 
 from ship_model import Ship

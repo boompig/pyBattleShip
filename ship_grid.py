@@ -3,13 +3,9 @@ Written by Daniel Kats
 March 4, 2013
 '''
 
-from Tkinter import *
-from ship_model import Ship, ShipLoader
-import time
+from Tkinter import Canvas, NORMAL, DISABLED
+from ship_model import Ship
 from grid_model import GridModel
-from ship_ai import ShipAI
-from ship_placement_panel import ShipPlacementPanel
-from ship_panel import ShipPanel
 
 class ShipGrid(Canvas):
     '''The UI manager for a player's grid in a game of battleship.
@@ -64,7 +60,7 @@ class ShipGrid(Canvas):
         
         x, y = self.get_tile_coords(id)
         
-        tag_id = self._get_tile_name(x, y)
+        # tag_id = self._get_tile_name(x, y)
         result = self._model.process_shot(x, y)
         
         if result == Ship.SUNK:

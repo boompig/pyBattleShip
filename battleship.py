@@ -5,20 +5,19 @@ April 3, 2013
 
 import tkFileDialog
 import tkMessageBox
-from Tkinter import *
+from Tkinter import Tk, BOTH, CURRENT, DISABLED
 from collections import OrderedDict
 import uuid
-import time
+# import time
 import random
 import json
 import os
 
 from ship_model import Ship, ShipLoader
-from grid_model import GridModel
-from ship_ai import ShipAI
+# from grid_model import GridModel
+# from ship_ai import ShipAI
 import mock1
 from player_controller import PlayerController
-#from splash.splash import SplashScreen
 
 class GameController(object):
     '''
@@ -88,12 +87,6 @@ class GameController(object):
         fp.write(str(self._game_id))
         fp.close()
 
-    def show_splash(self, app):
-        '''Show the splash screen.'''
-        
-        s = SplashScreen(app)
-        s.pack(expand=1)
-
     def __init__(self): 
         '''Create a main controller for the game.
         Create the GUI. Run the game.'''
@@ -162,7 +155,7 @@ class GameController(object):
         Cannot save the game before both AI and human player have placed ships.
         fname is the file name'''
 
-        grids = [self.enemy_grid, self.enemy_grid]
+        grids = [self.my_grid, self.enemy_grid]
         
         if all([g.has_all_ships() for g in grids]):
             while fname is None or isinstance(fname, list): 
@@ -190,6 +183,9 @@ class GameController(object):
                 obj[player]["shots"] = grid.get_shots()
             
             main_obj = {"battleship" : obj} # bind all data to a root element
+            head, tail = os.path.split(fname)
+            if not os.path.isdir(head):
+                os.makedirs(head)
             fp = open(fname, "w")
             if GameController.DEV_FLAG:
                 json.dump(main_obj, fp, indent=4, separators=(',', ': '))
@@ -432,25 +428,27 @@ class GameController(object):
         Process the given shot by the AI.
         Return the result of the shot'''
     
-        start = time.time()
+        # start = time.time()
         shot = self.game_frame.ai.get_shot()
         tag_id = self.game_frame.my_grid._get_tile_name(*shot)
         id = self.game_frame.my_grid.find_withtag(tag_id)[0]
         result = self.game_frame.my_grid.process_shot(id)
         
         if result == Ship.HIT or result == Ship.SUNK:
-            self.game_frame._set_ship_hit(self.enemy_grid.get_ship_at(*shot))
+            ship = self.my_grid.get_ship_at(*shot)
+            assert ship is not None
+            self.game_frame._set_ship_hit(ship)
             
         if result == Ship.SUNK:
-            self.game_frame._set_ship_sunk(self.enemy_grid.get_sunk_ship(*shot).get_short_name())
+            self.game_frame._set_ship_sunk(self.my_grid.get_sunk_ship(*shot).get_short_name())
         
-            if self.enemy_grid.all_sunk():
+            if self.my_grid.all_sunk():
                 self._winner = GameController.AI_PLAYER
                 
         # update the AI with the shot's result
         self.game_frame.ai.set_shot_result(result)
         
-        end = time.time()
+        # end = time.time()
         #TODO need to implement delay here somehow
         #while end-start < mock1.GameController.AI_SHOT_DELAY:
         #    end = time.time()

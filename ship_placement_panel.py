@@ -7,8 +7,7 @@ March 4, 2013
 #    IMPORTS    #
 #################
 
-from ship_model import Ship
-from Tkinter import *
+from Tkinter import Frame, Label, StringVar, Button, Canvas
 
 ####################
 #    MAIN CLASS    #
